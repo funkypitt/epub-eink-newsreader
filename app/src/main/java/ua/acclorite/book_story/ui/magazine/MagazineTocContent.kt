@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -145,13 +146,13 @@ private fun MagazineTocPager(
             MagazineHeaderBar(
                 onPrev = {
                     if (pagerState.currentPage > 0) {
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
+                        scope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
                     }
                 },
                 onHome = onHome,
                 onNext = {
                     if (pagerState.currentPage < pages.lastIndex) {
-                        scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                        scope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
                     }
                 },
                 prevEnabled = pagerState.currentPage > 0,
@@ -165,7 +166,10 @@ private fun MagazineTocPager(
                 HorizontalPager(
                     state = pagerState,
                     userScrollEnabled = false,
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .clipToBounds(),
                 ) { pageIdx ->
                     Column {
                         pages[pageIdx].forEachIndexed { idx, article ->

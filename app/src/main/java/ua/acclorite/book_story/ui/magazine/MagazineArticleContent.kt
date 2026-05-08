@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -67,7 +68,10 @@ fun MagazineArticleContent(
             centerText = state.article?.category,
         )
 
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        // Clip the article body strictly to its allotted band so the WebView
+        // (or any oversized image inside it) cannot bleed into the header /
+        // footer zones, no matter what the chapter's own CSS tries to do.
+        Box(modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
             when {
                 state.isLoading -> CenteredText("Loading…")
                 state.errorMessage != null -> CenteredText(state.errorMessage)
