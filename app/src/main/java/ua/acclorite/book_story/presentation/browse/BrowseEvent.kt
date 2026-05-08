@@ -58,4 +58,7 @@ sealed class BrowseEvent {
     data object OnNavigateToLibrary : BrowseEvent()
 
     data object OnNavigateToBrowseSettings : BrowseEvent()
+
+    /** Scan + import every file in the configured storage directory in one shot. */
+    data object OnAutoImportAll : BrowseEvent()
 }

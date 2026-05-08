@@ -44,6 +44,13 @@ object BrowseScreen : Screen, Parcelable {
     @IgnoredOnParcel
     val resetScrollPositionCompositionChannel: Channel<Unit> = Channel(Channel.CONFLATED)
 
+    /**
+     * Triggered from the onboarding "Done" step: scans the chosen storage
+     * folder and imports every file without showing the file-picker UI.
+     */
+    @IgnoredOnParcel
+    val autoImportAllChannel: Channel<Unit> = Channel(Channel.CONFLATED)
+
     @IgnoredOnParcel
     private var initialListIndex = 0
 
@@ -99,6 +106,12 @@ object BrowseScreen : Screen, Parcelable {
                 initialListOffset = 0
                 initialGridIndex = 0
                 initialGridOffset = 0
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            autoImportAllChannel.receiveAsFlow().collectLatest {
+                screenModel.onEvent(BrowseEvent.OnAutoImportAll)
             }
         }
 

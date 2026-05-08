@@ -12,13 +12,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import org.commonmark.node.BlockQuote
-import org.commonmark.node.FencedCodeBlock
-import org.commonmark.node.Heading
-import org.commonmark.node.HtmlBlock
-import org.commonmark.node.IndentedCodeBlock
-import org.commonmark.node.ThematicBreak
-import org.commonmark.parser.Parser
 import ua.acclorite.book_story.data.local.room.BookDatabase
 import ua.acclorite.book_story.data.local.room.DatabaseHelper
 import javax.inject.Singleton
@@ -26,25 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
-    @Provides
-    @Singleton
-    fun provideCommonmarkParser(): Parser {
-        return Parser
-            .builder()
-            .enabledBlockTypes(
-                setOf(
-                    Heading::class.java,
-                    HtmlBlock::class.java,
-                    ThematicBreak::class.java,
-                    BlockQuote::class.java,
-                    FencedCodeBlock::class.java,
-                    IndentedCodeBlock::class.java,
-                    ThematicBreak::class.java
-                )
-            )
-            .build()
-    }
 
     @Provides
     @Singleton

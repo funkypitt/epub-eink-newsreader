@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.parcelize.Parcelize
+import ua.acclorite.book_story.presentation.navigator.Navigator
 import ua.acclorite.book_story.presentation.navigator.Screen
 import ua.acclorite.book_story.ui.magazine.MagazineTocContent
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
@@ -34,6 +35,11 @@ data class MagazineTocScreen(val bookId: Int) : Screen, Parcelable {
                 navigator.push(MagazineArticleScreen(bookId = bookId, articleHref = article.contentHref))
             },
             onHome = { navigator.pop() },
+            onAppHome = { navigator.popToRoot() },
         )
     }
+}
+
+internal fun Navigator.popToRoot() {
+    while (items.value.size > 1) pop()
 }

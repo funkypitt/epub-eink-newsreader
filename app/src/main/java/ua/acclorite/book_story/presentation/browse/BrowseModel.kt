@@ -385,6 +385,23 @@ class BrowseModel @Inject constructor(
                 is BrowseEvent.OnNavigateToBrowseSettings -> {
                     _effects.emit(BrowseEffect.OnNavigateToBrowseSettings)
                 }
+
+                is BrowseEvent.OnAutoImportAll -> {
+                    withContext(Dispatchers.IO) {
+                        val files = getFilesUseCase("").filter { !it.isDirectory }
+                        files.forEach { file ->
+                            getBookFromFileUseCase(file)?.let { (book, cover) ->
+                                addBookUseCase(book, cover)
+                            }
+                        }
+                        LibraryScreen.refreshListChannel.trySend(0)
+                        LibraryScreen.scrollToPageCompositionChannel.trySend(0)
+                        _effects.emit(BrowseEffect.OnNavigateToLibrary)
+                        if (files.isNotEmpty()) {
+                            _effects.emit(BrowseEffect.OnBooksAdded)
+                        }
+                    }
+                }
             }
         }
     }

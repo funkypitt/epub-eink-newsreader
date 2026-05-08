@@ -51,4 +51,33 @@ class MagazinePaginationTest {
         val n = computeItemsPerPage(640.dp, 0.dp)
         assertEquals(1, n)
     }
+
+    // §"default font sizes calculated according to optimal readability for screen size"
+    @Test
+    fun `default text zoom by screen width is bracketed`() {
+        assertEquals(100, defaultTextZoomForScreenWidth(360)) // compact phone
+        assertEquals(110, defaultTextZoomForScreenWidth(412)) // Pixel 10 Pro XL
+        assertEquals(125, defaultTextZoomForScreenWidth(600)) // large phone / small foldable
+        assertEquals(140, defaultTextZoomForScreenWidth(840)) // tablet / e-ink 7"+
+    }
+
+    @Test
+    fun `injectArticleMargins inserts override style at end of head`() {
+        val html = """<html><head><link rel="stylesheet" href="style.css"/></head><body><p>x</p></body></html>"""
+        val out = injectArticleMargins(html)
+        // Override style sits *after* the producer's link so it wins specificity ties.
+        val styleIdx = out.indexOf("body { padding")
+        val linkIdx = out.indexOf("style.css")
+        val headCloseIdx = out.indexOf("</head>")
+        assert(linkIdx in 0 until styleIdx) { "override must come after producer style.css" }
+        assert(styleIdx in 0 until headCloseIdx) { "override must be inside <head>" }
+    }
+
+    @Test
+    fun `injectArticleMargins prepends head when missing`() {
+        val html = "<body><p>headless</p></body>"
+        val out = injectArticleMargins(html)
+        assert(out.startsWith("<head>")) { "should fall back to prepending <head>" }
+        assert("body { padding" in out)
+    }
 }

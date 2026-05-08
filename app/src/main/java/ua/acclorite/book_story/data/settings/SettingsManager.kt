@@ -90,7 +90,7 @@ class SettingsManager @Inject constructor(
         serialize = { it.name }, deserialize = { Theme.valueOf(it) }
     )
     val darkTheme = setting<DarkTheme, String>(
-        key = stringPreferencesKey("dark_theme"), default = DarkTheme.FOLLOW_SYSTEM,
+        key = stringPreferencesKey("dark_theme"), default = DarkTheme.OFF,
         serialize = { it.name }, deserialize = { DarkTheme.valueOf(it) }
     )
     val pureDark = setting<PureDark, String>(
@@ -316,7 +316,9 @@ class SettingsManager @Inject constructor(
         key = booleanPreferencesKey("library_show_default_tab"), default = false
     )
     val librarySortOrder = setting<LibrarySortOrder, String>(
-        key = stringPreferencesKey("library_sort_order"), default = LibrarySortOrder.LAST_READ,
+        // NAME descending = reverse-chronological for date-prefixed filenames
+        // (e.g. 2026-04-25-economist.epub) — newspapers land newest-first.
+        key = stringPreferencesKey("library_sort_order"), default = LibrarySortOrder.NAME,
         serialize = { it.name }, deserialize = { LibrarySortOrder.valueOf(it) }
     )
     val librarySortOrderDescending = setting<Boolean, Boolean>(

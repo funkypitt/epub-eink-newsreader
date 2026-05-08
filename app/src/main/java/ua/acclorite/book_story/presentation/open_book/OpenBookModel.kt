@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
+import ua.acclorite.book_story.domain.service.FileProvider
 import ua.acclorite.book_story.domain.use_case.book.GetBookUseCase
-import java.io.File
 import javax.inject.Inject
 
 sealed class OpenBookTarget {
@@ -29,6 +29,7 @@ sealed class OpenBookTarget {
 @HiltViewModel
 class OpenBookModel @Inject constructor(
     private val getBook: GetBookUseCase,
+    private val fileProvider: FileProvider,
     private val magazineParser: MagazineParser,
 ) : ViewModel() {
 
@@ -47,7 +48,11 @@ class OpenBookModel @Inject constructor(
             val book = getBook(bookId)
             val isMagazine = book?.let {
                 withContext(Dispatchers.IO) {
-                    runCatching { magazineParser.canParse(File(it.filePath)) }.getOrDefault(false)
+                    runCatching {
+                        val rawFile = fileProvider.getFileFromBook(it).getOrNull()?.rawFile
+                            ?: return@runCatching false
+                        magazineParser.canParse(rawFile)
+                    }.getOrDefault(false)
                 }
             } ?: false
             _target.tryEmit(

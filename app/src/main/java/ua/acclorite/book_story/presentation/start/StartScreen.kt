@@ -72,7 +72,7 @@ object StartScreen : Screen, Parcelable {
             languages = languages,
             updateLanguage = { settingsModel.onEvent(SettingsEvent.OnUpdateLanguage(it)) },
             navigateForward = {
-                if (currentPage.intValue + 1 == 4) {
+                if (currentPage.intValue + 1 == 2) {
                     return@StartContent
                 }
 
@@ -92,7 +92,10 @@ object StartScreen : Screen, Parcelable {
                     BrowseScreen,
                     saveInBackStack = false
                 )
-                BrowseScreen.refreshListChannel.trySend(Unit)
+                // Onboarding ends with a single auto-import: scan the chosen
+                // folder and add every ePub straight to the library, then
+                // bounce to LibraryScreen via the existing effect handler.
+                BrowseScreen.autoImportAllChannel.trySend(Unit)
                 settings.showStartScreen.update(false)
             }
         )

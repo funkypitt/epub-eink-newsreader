@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
 import ua.acclorite.book_story.domain.repository.BookRepository
+import ua.acclorite.book_story.domain.service.FileProvider
 import ua.acclorite.book_story.domain.use_case.book.GetBookUseCase
 import java.io.File
 import java.util.zip.ZipFile
@@ -25,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MagazineArticleModel @Inject constructor(
     private val getBook: GetBookUseCase,
+    private val fileProvider: FileProvider,
     private val magazineParser: MagazineParser,
     private val bookRepository: BookRepository,
 ) : ViewModel() {
@@ -42,8 +44,17 @@ class MagazineArticleModel @Inject constructor(
                     _state.update { MagazineArticleState(isLoading = false, errorMessage = "Book #$bookId not found.") }
                     return@launch
                 }
+                val rawFile = withContext(Dispatchers.IO) {
+                    fileProvider.getFileFromBook(book).getOrNull()?.rawFile
+                }
+                if (rawFile == null) {
+                    _state.update {
+                        MagazineArticleState(isLoading = false, errorMessage = "Could not access ePub file.")
+                    }
+                    return@launch
+                }
                 val issue = withContext(Dispatchers.IO) {
-                    magazineParser.parse(File(book.filePath))
+                    magazineParser.parse(rawFile)
                 }
                 if (issue == null) {
                     _state.update {
@@ -54,7 +65,7 @@ class MagazineArticleModel @Inject constructor(
                     }
                     return@launch
                 }
-                _state.update { it.copy(issue = issue, epubPath = book.filePath) }
+                _state.update { it.copy(issue = issue, epubPath = rawFile.absolutePath) }
                 loadedBookId = bookId
             }
             selectArticle(articleHref)

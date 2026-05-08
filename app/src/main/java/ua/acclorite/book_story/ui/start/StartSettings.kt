@@ -24,26 +24,11 @@ fun StartSettings(
         navigateForward = navigateForward
     ) {
         StartContentTransition(
-            targetValue = when (currentPage) {
-                0 -> StartScreen.GENERAL_SETTINGS
-                1 -> StartScreen.APPEARANCE_SETTINGS
-                else -> StartScreen.SCAN_SETTINGS
-            },
+            targetValue = StartScreen.SCAN_SETTINGS,
             stackEvent = stackEvent
         ) { page ->
             StartSettingsLayout {
                 when (page) {
-                    StartScreen.GENERAL_SETTINGS -> {
-                        StartSettingsLayoutGeneral(
-                            languages = languages,
-                            updateLanguage = updateLanguage
-                        )
-                    }
-
-                    StartScreen.APPEARANCE_SETTINGS -> {
-                        StartSettingsLayoutAppearance()
-                    }
-
                     StartScreen.SCAN_SETTINGS -> {
                         StartSettingsLayoutScan()
                     }

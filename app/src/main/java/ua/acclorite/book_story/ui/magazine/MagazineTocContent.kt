@@ -10,16 +10,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,9 +60,31 @@ fun MagazineTocContent(
     state: MagazineTocState,
     onArticleClick: (MagazineArticle) -> Unit,
     onHome: () -> Unit,
+    onAppHome: () -> Unit,
 ) {
     val context = LocalContext.current
 
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier.fillMaxSize().safeDrawingPadding()
+    ) {
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            TocBody(state, context, onArticleClick, onHome)
+        }
+        MagazineFooterBar(
+            onDecrease = null,        // no body text to scale on the TOC
+            onAppHome = onAppHome,
+            onIncrease = null,
+        )
+    }
+}
+
+@Composable
+private fun TocBody(
+    state: MagazineTocState,
+    context: android.content.Context,
+    onArticleClick: (MagazineArticle) -> Unit,
+    onHome: () -> Unit,
+) {
     when {
         state.isLoading -> CenteredText("Loading…")
         state.errorMessage != null -> CenteredText(state.errorMessage)
@@ -140,67 +161,30 @@ private fun MagazineTocPager(
             )
             Spacer(Modifier.height(VERTICAL_PADDING))
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                if (pages.isNotEmpty()) {
-                    HorizontalPager(
-                        state = pagerState,
-                        userScrollEnabled = false,
-                        modifier = Modifier.fillMaxSize(),
-                    ) { pageIdx ->
-                        Column {
-                            pages[pageIdx].forEachIndexed { idx, article ->
-                                ArticleCard(
-                                    article = article,
-                                    epubPath = epubPath,
-                                    opfDir = issue.opfDir,
-                                    imageLoader = imageLoader,
-                                    isActive = article.contentHref == currentArticleHref,
-                                    onClick = { onArticleClick(article) },
-                                )
-                                if (idx < pages[pageIdx].lastIndex) {
-                                    HorizontalDivider(thickness = SEPARATOR_HEIGHT)
-                                }
+            if (pages.isNotEmpty()) {
+                HorizontalPager(
+                    state = pagerState,
+                    userScrollEnabled = false,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                ) { pageIdx ->
+                    Column {
+                        pages[pageIdx].forEachIndexed { idx, article ->
+                            ArticleCard(
+                                article = article,
+                                epubPath = epubPath,
+                                opfDir = issue.opfDir,
+                                imageLoader = imageLoader,
+                                isActive = article.contentHref == currentArticleHref,
+                                onClick = { onArticleClick(article) },
+                            )
+                            if (idx < pages[pageIdx].lastIndex) {
+                                HorizontalDivider(thickness = SEPARATOR_HEIGHT)
                             }
                         }
                     }
                 }
-                // Tap zones: left half = previous page, right half = next page.
-                // Body taps still turn pages even when the header is unreachable
-                // on big screens. Cards are drawn after these zones so they
-                // consume taps first.
-                Row(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (pagerState.currentPage > 0) {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage - 1)
-                                    }
-                                }
-                            }
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (pagerState.currentPage < pages.lastIndex) {
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(pagerState.currentPage + 1)
-                                    }
-                                }
-                            }
-                    )
-                }
+            } else {
+                Spacer(Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(VERTICAL_PADDING))

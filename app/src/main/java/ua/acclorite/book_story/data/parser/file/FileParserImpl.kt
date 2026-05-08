@@ -14,11 +14,7 @@ import javax.inject.Inject
 private const val TAG = "FileParser"
 
 class FileParserImpl @Inject constructor(
-    private val txtFileParser: TxtFileParser,
-    private val pdfFileParser: PdfFileParser,
     private val epubFileParser: EpubFileParser,
-    private val fb2FileParser: Fb2FileParser,
-    private val htmlFileParser: HtmlFileParser,
 ) : FileParser {
 
     override suspend fun parse(cachedFile: CachedFile): Book? {
@@ -29,36 +25,9 @@ class FileParserImpl @Inject constructor(
 
         val fileFormat = ".${cachedFile.name.substringAfterLast(".")}".lowercase().trim()
         return when (fileFormat) {
-            ".pdf" -> {
-                pdfFileParser.parse(cachedFile)
-            }
-
-            ".epub" -> {
-                epubFileParser.parse(cachedFile)
-            }
-
-            ".txt" -> {
-                txtFileParser.parse(cachedFile)
-            }
-
-            ".fb2" -> {
-                fb2FileParser.parse(cachedFile)
-            }
-
-            ".html" -> {
-                htmlFileParser.parse(cachedFile)
-            }
-
-            ".htm" -> {
-                htmlFileParser.parse(cachedFile)
-            }
-
-            ".md" -> {
-                txtFileParser.parse(cachedFile)
-            }
-
+            ".epub" -> epubFileParser.parse(cachedFile)
             else -> {
-                logE(TAG, "Wrong file format, could not find supported extension.")
+                logE(TAG, "Unsupported file format \"$fileFormat\" — magazine reader only handles .epub.")
                 null
             }
         }

@@ -16,13 +16,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
+import ua.acclorite.book_story.domain.service.FileProvider
 import ua.acclorite.book_story.domain.use_case.book.GetBookUseCase
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class MagazineTocModel @Inject constructor(
     private val getBook: GetBookUseCase,
+    private val fileProvider: FileProvider,
     private val magazineParser: MagazineParser,
 ) : ViewModel() {
 
@@ -39,14 +40,23 @@ class MagazineTocModel @Inject constructor(
                 }
                 return@launch
             }
+            val rawFile = withContext(Dispatchers.IO) {
+                fileProvider.getFileFromBook(book).getOrNull()?.rawFile
+            }
+            if (rawFile == null) {
+                _state.update {
+                    it.copy(isLoading = false, errorMessage = "Could not access ePub file.")
+                }
+                return@launch
+            }
             val issue = withContext(Dispatchers.IO) {
-                magazineParser.parse(File(book.filePath))
+                magazineParser.parse(rawFile)
             }
             if (issue == null) {
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        epubPath = book.filePath,
+                        epubPath = rawFile.absolutePath,
                         errorMessage = "This ePub is not a magazine.",
                     )
                 }
@@ -56,7 +66,7 @@ class MagazineTocModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     issue = issue,
-                    epubPath = book.filePath,
+                    epubPath = rawFile.absolutePath,
                     currentArticleHref = book.currentArticleHref,
                 )
             }
