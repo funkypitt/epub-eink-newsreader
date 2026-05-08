@@ -164,4 +164,7 @@ dependencies {
 
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+
+    // Unit tests
+    testImplementation("junit:junit:4.13.2")
 }
