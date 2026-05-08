@@ -17,12 +17,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import ua.acclorite.book_story.R
 import ua.acclorite.book_story.data.settings.SettingsManager
 import ua.acclorite.book_story.presentation.browse.BrowseModel
@@ -40,6 +43,7 @@ import ua.acclorite.book_story.ui.common.helpers.ProvideSettings
 import ua.acclorite.book_story.ui.main.MainActivityKeyboardManager
 import ua.acclorite.book_story.ui.navigator.Navigator
 import ua.acclorite.book_story.ui.navigator.NavigatorTabs
+import ua.acclorite.book_story.ui.navigator.rememberNavigator
 import ua.acclorite.book_story.ui.settings.SettingsEffects
 import ua.acclorite.book_story.ui.theme.BookStoryTheme
 import ua.acclorite.book_story.ui.theme.Transitions
@@ -54,6 +58,26 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var settings: SettingsManager
     private val settingsModel: SettingsModel by viewModels()
+
+    companion object {
+        /**
+         * Carries URIs from [onNewIntent] (warm starts) into the running
+         * Composition so the navigator can push [OpenIntentScreen] without
+         * recreating the activity. Conflated to keep only the most recent.
+         */
+        val newIntentUriChannel: Channel<String> = Channel(Channel.CONFLATED)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Update the activity's intent so subsequent restarts/recompositions
+        // see the new payload.
+        setIntent(intent)
+        intent.takeIf { it.action == Intent.ACTION_VIEW }
+            ?.data
+            ?.toString()
+            ?.let { newIntentUriChannel.trySend(it) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().setKeepOnScreenCondition {
@@ -119,13 +143,25 @@ class MainActivity : AppCompatActivity() {
                         isPureDark = settings.pureDark.value.isPureDark(this),
                         themeContrast = settings.themeContrast.value
                     ) {
+                        val initialScreen = when {
+                            initialIntentUri != null ->
+                                OpenIntentScreen(uriString = initialIntentUri)
+                            settings.showStartScreen.value -> StartScreen
+                            else -> LibraryScreen
+                        }
+                        // Same VM the Navigator composable resolves internally
+                        // (viewModels<Navigator> is keyed to the activity), so
+                        // we can push onto the running stack from here.
+                        val navigator = rememberNavigator(initialScreen = initialScreen)
+                        LaunchedEffect(navigator) {
+                            newIntentUriChannel.receiveAsFlow().collect { uri ->
+                                navigator.push(
+                                    targetScreen = OpenIntentScreen(uriString = uri),
+                                )
+                            }
+                        }
                         Navigator(
-                            initialScreen = when {
-                                initialIntentUri != null ->
-                                    OpenIntentScreen(uriString = initialIntentUri)
-                                settings.showStartScreen.value -> StartScreen
-                                else -> LibraryScreen
-                            },
+                            initialScreen = initialScreen,
                             transitionSpec = { lastEvent ->
                                 when (lastEvent) {
                                     StackEvent.DEFAULT -> {

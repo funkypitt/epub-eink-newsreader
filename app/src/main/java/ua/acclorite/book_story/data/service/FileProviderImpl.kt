@@ -7,10 +7,12 @@
 package ua.acclorite.book_story.data.service
 
 import android.app.Application
+import androidx.core.net.toUri
 import ua.acclorite.book_story.data.model.file.CachedFile
 import ua.acclorite.book_story.data.model.file.CachedFileCompat
 import ua.acclorite.book_story.domain.model.library.Book
 import ua.acclorite.book_story.domain.service.FileProvider
+import java.io.File
 import javax.inject.Inject
 
 class FileProviderImpl @Inject constructor(
@@ -18,6 +20,21 @@ class FileProviderImpl @Inject constructor(
 ) : FileProvider {
 
     override fun getFileFromBook(book: Book): Result<CachedFile> = runCatching {
+        // Books imported via the system "Open with" sheet live under the
+        // app's filesDir and don't appear in any SAF persisted URI tree.
+        // Short-circuit so the magazine reader can resolve them too.
+        val internalRoot = application.filesDir.absolutePath
+        if (book.filePath.startsWith(internalRoot)) {
+            val local = File(book.filePath)
+            if (!local.exists()) {
+                throw NoSuchElementException("Local file missing: ${book.filePath}")
+            }
+            return@runCatching CachedFileCompat.fromUri(
+                context = application,
+                uri = local.toUri(),
+            )
+        }
+
         application.contentResolver.persistedUriPermissions.forEach { storage ->
             val storageFile = CachedFileCompat.fromUri(
                 application,
