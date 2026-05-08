@@ -25,7 +25,8 @@ class BookMapperImpl @Inject constructor() : BookMapper {
             author = book.author.getAsString() ?: "",
             description = book.description,
             image = book.coverImage?.toString(),
-            categories = book.categories
+            categories = book.categories,
+            currentArticleHref = book.currentArticleHref,
         )
     }
 
@@ -44,7 +45,8 @@ class BookMapperImpl @Inject constructor() : BookMapper {
             filePath = bookEntity.filePath,
             lastOpened = null,
             coverImage = bookEntity.image?.toUri(),
-            categories = bookEntity.categories
+            categories = bookEntity.categories,
+            currentArticleHref = bookEntity.currentArticleHref,
         )
     }
 }

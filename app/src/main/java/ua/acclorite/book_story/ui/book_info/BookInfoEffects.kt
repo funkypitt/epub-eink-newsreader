@@ -14,7 +14,7 @@ import ua.acclorite.book_story.R
 import ua.acclorite.book_story.domain.model.library.Book
 import ua.acclorite.book_story.presentation.book_info.BookInfoEffect
 import ua.acclorite.book_story.presentation.history.HistoryScreen
-import ua.acclorite.book_story.presentation.reader.ReaderScreen
+import ua.acclorite.book_story.presentation.open_book.OpenBookScreen
 import ua.acclorite.book_story.presentation.settings.LibrarySettingsScreen
 import ua.acclorite.book_story.ui.common.helpers.showToast
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
@@ -88,7 +88,7 @@ fun BookInfoEffects(effects: SharedFlow<BookInfoEffect>, book: Book) {
                 is BookInfoEffect.OnNavigateToReader -> {
                     if (book.id != -1) {
                         HistoryScreen.insertHistoryChannel.trySend(book.id)
-                        navigator.push(ReaderScreen(book.id))
+                        navigator.push(OpenBookScreen(book.id))
                     }
                 }
             }

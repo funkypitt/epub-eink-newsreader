@@ -19,7 +19,7 @@ import ua.acclorite.book_story.presentation.history.HistoryEffect
 import ua.acclorite.book_story.presentation.history.HistoryEvent
 import ua.acclorite.book_story.presentation.history.HistoryScreen.insertHistoryChannel
 import ua.acclorite.book_story.presentation.library.LibraryScreen
-import ua.acclorite.book_story.presentation.reader.ReaderScreen
+import ua.acclorite.book_story.presentation.open_book.OpenBookScreen
 import ua.acclorite.book_story.ui.common.helpers.showToast
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
@@ -70,7 +70,7 @@ fun HistoryEffects(
 
                 is HistoryEffect.OnNavigateToReader -> {
                     insertHistoryChannel.trySend(effect.bookId)
-                    navigator.push(ReaderScreen(bookId = effect.bookId))
+                    navigator.push(OpenBookScreen(bookId = effect.bookId))
                 }
             }
         }

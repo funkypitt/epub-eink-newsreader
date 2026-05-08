@@ -24,5 +24,6 @@ data class BookEntity(
     val scrollOffset: Int,
     val progress: Float,
     val image: String? = null,
-    @ColumnInfo(defaultValue = "[]") val categories: List<Int>
+    @ColumnInfo(defaultValue = "[]") val categories: List<Int>,
+    @ColumnInfo(defaultValue = "NULL") val currentArticleHref: String? = null,
 )
