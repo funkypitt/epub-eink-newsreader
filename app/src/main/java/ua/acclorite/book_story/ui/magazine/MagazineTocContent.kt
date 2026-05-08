@@ -144,22 +144,40 @@ private fun MagazineTocPager(
             ).joinToString(" — ")
         }
 
+        // Header arrows navigate prev / next ARTICLE (in spine order),
+        // never turn TOC pages — matches the spec for the article view
+        // and is consistent across both screens. TOC page navigation
+        // moves to swipe (userScrollEnabled = true on the pager).
+        val articles = allArticles
+        val currentIdx = remember(articles, currentArticleHref) {
+            if (currentArticleHref == null) -1
+            else articles.indexOfFirst { it.contentHref == currentArticleHref }
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             MagazineHeaderBar(
                 onPrev = {
-                    if (pagerState.currentPage > 0) {
-                        scope.launch { pagerState.scrollToPage(pagerState.currentPage - 1) }
+                    if (articles.isEmpty()) return@MagazineHeaderBar
+                    val target = when {
+                        currentIdx > 0 -> articles[currentIdx - 1]
+                        currentIdx == 0 -> articles.first()
+                        else -> articles.last()  // no current → land on the last
                     }
+                    onArticleClick(target)
                 },
                 onHome = onHome,
                 onNext = {
-                    if (pagerState.currentPage < pages.lastIndex) {
-                        scope.launch { pagerState.scrollToPage(pagerState.currentPage + 1) }
+                    if (articles.isEmpty()) return@MagazineHeaderBar
+                    val target = when {
+                        currentIdx in 0 until articles.lastIndex -> articles[currentIdx + 1]
+                        currentIdx == articles.lastIndex -> articles.last()
+                        else -> articles.first()  // no current → land on the first
                     }
+                    onArticleClick(target)
                 },
-                prevEnabled = pagerState.currentPage > 0,
+                prevEnabled = articles.isNotEmpty(),
                 homeEnabled = true,
-                nextEnabled = pagerState.currentPage < pages.lastIndex,
+                nextEnabled = articles.isNotEmpty(),
                 centerText = centerLabel,
             )
             Spacer(Modifier.height(VERTICAL_PADDING))
@@ -167,7 +185,7 @@ private fun MagazineTocPager(
             if (pages.isNotEmpty()) {
                 HorizontalPager(
                     state = pagerState,
-                    userScrollEnabled = false,
+                    userScrollEnabled = true,  // swipe to flip TOC pages
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
