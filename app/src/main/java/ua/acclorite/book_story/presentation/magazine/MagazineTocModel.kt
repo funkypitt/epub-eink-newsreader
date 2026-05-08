@@ -31,13 +31,22 @@ class MagazineTocModel @Inject constructor(
     private val _state = MutableStateFlow(MagazineTocState())
     val state = _state.asStateFlow()
 
+    // Identifies which source the current state corresponds to. Without
+    // this the activity-scoped VM would happily serve the first issue's
+    // TOC for every subsequent open, since `_state.value.issue != null`
+    // alone can't tell whether the cached issue matches the new request.
+    private var loadedKey: String? = null
+
     /**
      * Library mode — resolves the book by id and locates its ePub through
      * SAF-based [FileProvider]. Persists `currentArticleHref` for the
      * "highlight last-read" feature.
      */
     fun loadFromLibrary(bookId: Int) {
-        if (_state.value.issue != null) return
+        val key = "lib:$bookId"
+        if (loadedKey == key && _state.value.issue != null) return
+        loadedKey = key
+        _state.value = MagazineTocState()
         viewModelScope.launch {
             val book = getBook(bookId)
             if (book == null) {
@@ -61,7 +70,10 @@ class MagazineTocModel @Inject constructor(
      * library entry, no last-read tracking.
      */
     fun loadFromPath(epubPath: String) {
-        if (_state.value.issue != null) return
+        val key = "path:$epubPath"
+        if (loadedKey == key && _state.value.issue != null) return
+        loadedKey = key
+        _state.value = MagazineTocState()
         viewModelScope.launch {
             val rawFile = File(epubPath)
             if (!rawFile.exists()) {
