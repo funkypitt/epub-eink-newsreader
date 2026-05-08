@@ -17,24 +17,24 @@ class MagazinePaginationTest {
      * Mirrors the layout constants in [MagazineTocContent].
      */
     private val cardPlusSeparator = 140.dp + 1.dp
-    private val chrome = 40.dp + 32.dp + (8.dp * 2) // header + indicator + 2× vertical padding
+    private val chrome = 48.dp + 32.dp + (8.dp * 2) // 3-zone header + indicator + 2× vertical padding
 
     @Test
-    fun `compact phone 360x640 fits at least 3 cards`() {
+    fun `compact phone 360x640 fits 3 cards`() {
         val available = 640.dp - chrome
         val n = computeItemsPerPage(available, cardPlusSeparator)
         assertEquals(3, n)
     }
 
     @Test
-    fun `medium phone 480x800 fits at least 5 cards`() {
+    fun `medium phone 480x800 fits 4 cards`() {
         val available = 800.dp - chrome
         val n = computeItemsPerPage(available, cardPlusSeparator)
-        assertEquals(5, n)
+        assertEquals(4, n)
     }
 
     @Test
-    fun `tablet 800x1280 fits at least 8 cards`() {
+    fun `tablet 800x1280 fits 8 cards`() {
         val available = 1280.dp - chrome
         val n = computeItemsPerPage(available, cardPlusSeparator)
         assertEquals(8, n)

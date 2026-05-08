@@ -14,26 +14,28 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.parcelize.Parcelize
 import ua.acclorite.book_story.presentation.navigator.Screen
-import ua.acclorite.book_story.ui.magazine.MagazineTocContent
+import ua.acclorite.book_story.ui.magazine.MagazineArticleContent
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
 @Parcelize
-data class MagazineTocScreen(val bookId: Int) : Screen, Parcelable {
+data class MagazineArticleScreen(
+    val bookId: Int,
+    val articleHref: String,
+) : Screen, Parcelable {
 
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.current
-        val model = hiltViewModel<MagazineTocModel>()
+        val model = hiltViewModel<MagazineArticleModel>()
         val state by model.state.collectAsStateWithLifecycle()
 
-        LaunchedEffect(bookId) { model.load(bookId) }
+        LaunchedEffect(bookId, articleHref) { model.load(bookId, articleHref) }
 
-        MagazineTocContent(
+        MagazineArticleContent(
             state = state,
-            onArticleClick = { article ->
-                navigator.push(MagazineArticleScreen(bookId = bookId, articleHref = article.contentHref))
-            },
+            onPrev = { model.goToOffset(-1) },
             onHome = { navigator.pop() },
+            onNext = { model.goToOffset(+1) },
         )
     }
 }
