@@ -39,7 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -154,8 +153,6 @@ private fun ChapterWebView(
 ) {
     var client by remember { mutableStateOf<MagazineWebViewClient?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
-    val density = LocalDensity.current
-    val edgeFadePx = remember(density) { with(density) { EDGE_FADE.toPx() }.toInt() }
 
     DisposableEffect(epubPath, opfDir) {
         val c = MagazineWebViewClient(File(epubPath), opfDir)
@@ -171,7 +168,10 @@ private fun ChapterWebView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
-                    settings.javaScriptEnabled = false
+                    // JS is enabled solely for our own injected paginator
+                    // (see prepareChapterHtml) which aligns scroll to whole
+                    // lines. Producer chapters don't run scripts.
+                    settings.javaScriptEnabled = true
                     settings.allowFileAccess = false
                     settings.allowContentAccess = false
                     settings.builtInZoomControls = false
@@ -215,13 +215,13 @@ private fun ChapterWebView(
         )
 
         // Tap zones: three equal thirds.
-        //   left   → previous page (scroll back by viewport - EDGE_FADE)
+        //   left   → previous page (line-aligned scroll, JS-driven)
         //   centre → toggle chrome (header / footer overlays)
-        //   right  → next page (scroll forward by viewport - EDGE_FADE)
+        //   right  → next page (line-aligned scroll, JS-driven)
         //
-        // Each step advances by (viewport - EDGE_FADE) so the line that's
-        // half-cut at the bottom of page N reappears in full as the first
-        // line of page N+1. The white band below masks that cut line.
+        // The JS paginator (injected in prepareChapterHtml) reads the
+        // computed body line-height and snaps scrollY to a whole-line
+        // multiple — no mid-line cuts at either edge of a page.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -231,11 +231,7 @@ private fun ChapterWebView(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {
-                        webView?.let { wv ->
-                            val step = (wv.height - edgeFadePx).coerceAtLeast(wv.height / 2)
-                            val newY = (wv.scrollY - step).coerceAtLeast(0)
-                            wv.scrollTo(0, newY)
-                        }
+                        webView?.evaluateJavascript("window.__mr_page(-1)", null)
                     }
             )
             Box(
@@ -256,12 +252,7 @@ private fun ChapterWebView(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
                     ) {
-                        webView?.let { wv ->
-                            if (wv.canScrollVertically(1)) {
-                                val step = (wv.height - edgeFadePx).coerceAtLeast(wv.height / 2)
-                                wv.scrollTo(0, wv.scrollY + step)
-                            }
-                        }
+                        webView?.evaluateJavascript("window.__mr_page(1)", null)
                     }
             )
         }
@@ -320,10 +311,18 @@ private val BROKEN_DROP_CAP = Regex(
 )
 
 /**
- * Repairs known producer-side HTML defects and injects a small override
- * `<style>` block at the end of `<head>` so the producer's `style.css`
- * doesn't leave the article body without sane margins or with images
- * that overflow the viewport.
+ * Repairs known producer-side HTML defects and injects:
+ *
+ * 1. A small override `<style>` block at the end of `<head>` so the
+ *    producer's `style.css` doesn't leave the article body without
+ *    sane margins or with images that overflow the viewport. The
+ *    body's line-height is forced to a fixed multiplier so the JS
+ *    paginator can read a stable per-line value.
+ * 2. A `<script>` defining `window.__mr_page(direction)` that
+ *    advances scroll by `(viewport - 1 line)` *snapped to a whole
+ *    multiple of line-height*. This is what eliminates the half-cut
+ *    line at the page edges — every page boundary is on a line
+ *    boundary by construction.
  */
 internal fun prepareChapterHtml(html: String): String {
     val repaired = BROKEN_DROP_CAP.replace(html) { match ->
@@ -332,14 +331,45 @@ internal fun prepareChapterHtml(html: String): String {
     val style = """
         <style>
           html, body { margin: 0 !important; }
-          body { padding: 14px 16px !important; box-sizing: border-box !important; }
+          body {
+            padding: 14px 16px !important;
+            box-sizing: border-box !important;
+            line-height: 1.6 !important;
+          }
           img, figure, video { max-width: 100% !important; height: auto !important; }
           .hero-img img, .img-container img { width: 100% !important; }
         </style>
     """.trimIndent()
+    val script = """
+        <script>
+        (function () {
+          function lineHeight() {
+            var lh = parseFloat(getComputedStyle(document.body).lineHeight);
+            return (isFinite(lh) && lh > 0) ? lh : 24;
+          }
+          window.__mr_page = function (direction) {
+            var lh = lineHeight();
+            var vh = window.innerHeight;
+            // Step: viewport minus one line, then snap DOWN to a whole
+            // line multiple so the next page starts exactly at a line.
+            var step = Math.floor((vh - lh) / lh) * lh;
+            if (step < lh) step = lh;
+            var max = Math.max(
+              0,
+              document.documentElement.scrollHeight - vh
+            );
+            var target = Math.max(0, Math.min(max, window.scrollY + direction * step));
+            // Snap target to a line boundary too.
+            target = Math.floor(target / lh) * lh;
+            window.scrollTo(0, target);
+          };
+        })();
+        </script>
+    """.trimIndent()
+    val injection = "$style\n$script"
     return if (HEAD_CLOSE.containsMatchIn(repaired)) {
-        HEAD_CLOSE.replaceFirst(repaired, "$style</head>")
+        HEAD_CLOSE.replaceFirst(repaired, "$injection</head>")
     } else {
-        "<head>$style</head>$repaired"
+        "<head>$injection</head>$repaired"
     }
 }
