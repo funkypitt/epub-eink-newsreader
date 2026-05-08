@@ -117,12 +117,34 @@ function loadBook(base64Data, href) {
 
     book.ready.then(function () {
       trace("book.ready-resolved");
+      try {
+        trace("spine-count", book.spine && book.spine.length);
+        var first = book.spine && book.spine.get && book.spine.get(0);
+        if (first) {
+          trace("spine[0]",
+            "href=" + (first.href || "?") +
+            " idref=" + (first.idref || "?") +
+            " canonical=" + (first.canonical || "?"));
+        }
+      } catch (_) {}
+
       var hide = document.getElementById("loading");
       if (hide) hide.style.display = "none";
-      return pendingHref ? rendition.display(pendingHref) : rendition.display();
+
+      // Always display the first chapter first — passing an href that
+      // doesn't match epub.js's normalised spine entries makes
+      // rendition.display() hang silently. Once the first page is up
+      // we navigate to the requested href as a follow-up.
+      return rendition.display();
     }).then(function () {
       trace("rendition.display-resolved");
       notify("onReady", "");
+      if (pendingHref) {
+        trace("navigating-to-href", pendingHref);
+        return rendition.display(pendingHref);
+      }
+    }).then(function (result) {
+      if (pendingHref) trace("navigated-to-href", pendingHref);
     }).catch(function (e) {
       trace("book.ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
