@@ -130,8 +130,15 @@ private fun ChapterWebView(
                     settings.allowContentAccess = false
                     settings.builtInZoomControls = false
                     settings.displayZoomControls = false
-                    settings.useWideViewPort = false
-                    settings.loadWithOverviewMode = true
+                    // useWideViewPort=true tells the WebView to honour the
+                    // <meta name="viewport"> tag we inject (width=device-width)
+                    // — without it the WebView falls back to a 980px default
+                    // viewport and our 100vh/100vw resolve to nonsense.
+                    // loadWithOverviewMode=false: don't scale the document to
+                    // fit the screen; we want it at 1:1 so column-width: 100vw
+                    // produces real-viewport-sized columns.
+                    settings.useWideViewPort = true
+                    settings.loadWithOverviewMode = false
                     overScrollMode = WebView.OVER_SCROLL_NEVER
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
@@ -249,18 +256,19 @@ internal fun injectArticleMargins(html: String): String {
     val style = """
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-          html, body {
-            margin: 0 !important;
-            height: 100% !important;
+          html, body { margin: 0 !important; }
+          html {
+            height: 100vh !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
           }
-          html { overflow-y: hidden !important; }
           body {
+            height: 100vh !important;
             padding: 14px 16px !important;
             box-sizing: border-box !important;
             column-width: 100vw !important;
             column-gap: 0 !important;
             column-fill: auto !important;
-            height: 100% !important;
             overflow-y: hidden !important;
           }
           img, figure, video {
