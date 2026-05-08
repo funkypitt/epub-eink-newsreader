@@ -106,7 +106,7 @@ class SettingsManager @Inject constructor(
 
     /* ------ Library ---------------------------- */
     val libraryLayout = setting<LibraryLayout, String>(
-        key = stringPreferencesKey("library_layout"), default = LibraryLayout.GRID,
+        key = stringPreferencesKey("library_layout"), default = LibraryLayout.LIST,
         serialize = { it.name }, deserialize = { LibraryLayout.valueOf(it) }
     )
     val libraryAutoGridSize = setting<Boolean, Boolean>(
