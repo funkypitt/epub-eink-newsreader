@@ -174,8 +174,16 @@ private fun EpubJsArticleView(
                     settings.allowUniversalAccessFromFileURLs = true
                     settings.builtInZoomControls = false
                     settings.displayZoomControls = false
-                    settings.useWideViewPort = false
+                    // funky-openlib uses useWideViewPort=true for epub.js;
+                    // with false the iframe ends up sized against the 980px
+                    // legacy viewport and the rendered page falls outside
+                    // the visible area.
+                    settings.useWideViewPort = true
                     settings.loadWithOverviewMode = false
+                    // funky-openlib also forces software rendering for
+                    // epub.js's iframes — hardware acceleration causes the
+                    // iframe content not to paint on some chipsets.
+                    setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
                     overScrollMode = WebView.OVER_SCROLL_NEVER
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
