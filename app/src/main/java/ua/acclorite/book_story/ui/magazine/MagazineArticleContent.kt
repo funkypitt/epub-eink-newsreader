@@ -15,12 +15,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,25 +78,22 @@ fun MagazineArticleContent(
         defaultTextZoomForScreenWidth(config.screenWidthDp)
     }
     var textZoom by remember(initialZoom) { mutableIntStateOf(initialZoom) }
+    var chromeVisible by remember(state.article?.contentHref) {
+        mutableStateOf(false)
+    }
 
     KeepScreenOnEffect()
 
-    Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-        MagazineHeaderBar(
-            onPrev = onPrev,
-            onHome = onTocHome,
-            onNext = onNext,
-            prevEnabled = state.hasPrev,
-            homeEnabled = true,
-            nextEnabled = state.hasNext,
-            centerText = state.article?.category,
-        )
-        Spacer(Modifier.height(8.dp))
-
-        // Clip the article body strictly to its allotted band so the WebView
-        // (or any oversized image inside it) cannot bleed into the header /
-        // footer zones, no matter what the chapter's own CSS tries to do.
-        Box(modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        // Body fills the whole screen (minus system insets) so the article
+        // text is never sharing space with the chrome — the previous design's
+        // central pain point.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .clipToBounds()
+        ) {
             when {
                 state.isLoading -> CenteredText("Loading…")
                 state.errorMessage != null -> CenteredText(state.errorMessage)
@@ -103,19 +104,42 @@ fun MagazineArticleContent(
                         chapterHref = state.article?.contentHref ?: return@Box,
                         html = state.chapterHtml,
                         textZoom = textZoom,
+                        onTapCenter = { chromeVisible = !chromeVisible },
                     )
                 else -> CenteredText("No content.")
             }
         }
 
-        MagazineFooterBar(
-            onDecrease = { textZoom = (textZoom - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) },
-            onAppHome = onAppHome,
-            onIncrease = { textZoom = (textZoom + ZOOM_STEP).coerceAtMost(ZOOM_MAX) },
-            decreaseEnabled = textZoom > ZOOM_MIN,
-            increaseEnabled = textZoom < ZOOM_MAX,
-            centerLabel = "$textZoom%",
-        )
+        // Chrome overlay: appears on a centre tap, disappears on the next.
+        // Header chevrons step between articles in spine order; footer +/-
+        // adjusts text zoom and home pops back to the library. Both share
+        // the same chromeVisible flag — there's no need to keep the font
+        // controls permanently on screen.
+        if (chromeVisible) {
+            MagazineHeaderBar(
+                onPrev = onPrev,
+                onHome = onTocHome,
+                onNext = onNext,
+                prevEnabled = state.hasPrev,
+                homeEnabled = true,
+                nextEnabled = state.hasNext,
+                centerText = state.article?.category,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+            )
+            MagazineFooterBar(
+                onDecrease = { textZoom = (textZoom - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) },
+                onAppHome = onAppHome,
+                onIncrease = { textZoom = (textZoom + ZOOM_STEP).coerceAtMost(ZOOM_MAX) },
+                decreaseEnabled = textZoom > ZOOM_MIN,
+                increaseEnabled = textZoom < ZOOM_MAX,
+                centerLabel = "$textZoom%",
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            )
+        }
     }
 }
 
@@ -126,6 +150,7 @@ private fun ChapterWebView(
     chapterHref: String,
     html: String,
     textZoom: Int,
+    onTapCenter: () -> Unit,
 ) {
     var client by remember { mutableStateOf<MagazineWebViewClient?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
@@ -189,7 +214,11 @@ private fun ChapterWebView(
             },
         )
 
-        // Tap zones: left third = page back, right third = page forward.
+        // Tap zones: three equal thirds.
+        //   left   → previous page (scroll back by viewport - EDGE_FADE)
+        //   centre → toggle chrome (header / footer overlays)
+        //   right  → next page (scroll forward by viewport - EDGE_FADE)
+        //
         // Each step advances by (viewport - EDGE_FADE) so the line that's
         // half-cut at the bottom of page N reappears in full as the first
         // line of page N+1. The white band below masks that cut line.
@@ -209,7 +238,16 @@ private fun ChapterWebView(
                         }
                     }
             )
-            Spacer(Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onTapCenter,
+                    )
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
