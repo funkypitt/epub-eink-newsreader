@@ -8,7 +8,10 @@ package ua.acclorite.book_story.ui.magazine
 
 import android.annotation.SuppressLint
 import android.util.Base64
+import android.util.Log
+import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -142,6 +145,7 @@ private fun EpubJsArticleView(
     var webView by remember { mutableStateOf<WebView?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
     var bookLoaded by remember(epubPath) { mutableStateOf(false) }
+    var debugStatus by remember { mutableStateOf<String?>(null) }
 
     val epubBase64 = remember(epubPath) {
         runCatching {
@@ -154,6 +158,10 @@ private fun EpubJsArticleView(
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
+                // Enable Chrome DevTools remote debugging — connect the
+                // device by USB then open chrome://inspect/#devices in
+                // Chrome on the host to step through the live WebView.
+                WebView.setWebContentsDebuggingEnabled(true)
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = false
@@ -176,15 +184,33 @@ private fun EpubJsArticleView(
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             super.onPageFinished(view, url)
-                            // reader.html has finished parsing — loadBook is
-                            // now defined and safe to call from Kotlin.
                             pageLoaded = true
+                        }
+                    }
+                    // Forward every console.log / .warn / .error from the
+                    // WebView into Android's logcat under the "MagazineJS"
+                    // tag, plus surface the most recent line on screen.
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                            val level = when (message.messageLevel()) {
+                                ConsoleMessage.MessageLevel.ERROR,
+                                ConsoleMessage.MessageLevel.WARNING -> Log.WARN
+                                else -> Log.INFO
+                            }
+                            Log.println(
+                                level,
+                                "MagazineJS",
+                                "${message.message()} (${message.sourceId()}:${message.lineNumber()})",
+                            )
+                            debugStatus = message.message()
+                            return true
                         }
                     }
                     addJavascriptInterface(
                         MagazineReaderBridge(
-                            readyCallback = { /* tap zones already mounted */ },
-                            errorCallback = { /* could surface to state if needed */ },
+                            readyCallback = { debugStatus = null },
+                            errorCallback = { debugStatus = "[error] $it" },
+                            traceCallback = { debugStatus = it },
                         ),
                         "MagazineReader",
                     )
@@ -208,6 +234,26 @@ private fun EpubJsArticleView(
                 }
             },
         )
+
+        // Debug status overlay — shows the most recent reader.html trace
+        // (or the most recent JS console message) so a hang is visible
+        // without logcat. Auto-clears once the article successfully
+        // displays (onReady fires).
+        debugStatus?.let { status ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color(0xCC000000))
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = status,
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
 
         // Three tap-zone thirds: left = prev page, centre = toggle chrome,
         // right = next page. Always above the WebView in z-order.
@@ -248,6 +294,7 @@ private fun EpubJsArticleView(
 private class MagazineReaderBridge(
     private val readyCallback: () -> Unit,
     private val errorCallback: (String) -> Unit,
+    private val traceCallback: (String) -> Unit,
 ) {
     @JavascriptInterface
     fun onReady(payload: String) {
@@ -262,6 +309,12 @@ private class MagazineReaderBridge(
     @JavascriptInterface
     fun onError(message: String) {
         errorCallback(message)
+    }
+
+    /** Stage trace from reader.html — consumed by the on-screen debug overlay. */
+    @JavascriptInterface
+    fun onTrace(message: String) {
+        traceCallback(message)
     }
 }
 

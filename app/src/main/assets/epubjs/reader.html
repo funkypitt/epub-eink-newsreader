@@ -14,9 +14,10 @@
   #loading {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
-    font-family: sans-serif; font-size: 14px; color: #888;
+    font-family: monospace; font-size: 12px; color: #888;
     z-index: 5;
-    white-space: nowrap;
+    white-space: pre;
+    text-align: center;
   }
 </style>
 <script src="jszip.min.js"></script>
@@ -26,13 +27,43 @@
 <div id="viewer"></div>
 <div id="loading">Loading…</div>
 <script>
-// epub.js host page for the Magazine Reader. Receives the ePub bytes
-// and the chapter href from the Android side, displays the chapter in
+// epub.js host page for the Magazine Reader. Receives the ePub bytes and
+// the chapter href from the Android side, displays the chapter in
 // epub.js's `flow: paginated` mode, exposes goNext / goPrev / setFontSize
 // for the Compose tap-zone overlay to call.
-//
-// All call-back into Android happens through window.MagazineReader,
-// which is bound from Kotlin via WebView.addJavascriptInterface.
+
+// ----- Debug instrumentation ------------------------------------------
+// Every checkpoint logs through console.log (Android's WebChromeClient
+// forwards these to the MagazineJS logcat tag) and through
+// window.MagazineReader.onTrace (the Compose status overlay shows the
+// most recent message in plain sight).
+function trace(stage, detail) {
+  var msg = "[mr] " + stage + (detail !== undefined ? ": " + detail : "");
+  try { console.log(msg); } catch (_) {}
+  try {
+    if (window.MagazineReader && window.MagazineReader.onTrace) {
+      window.MagazineReader.onTrace(msg);
+    }
+  } catch (_) {}
+  try {
+    var el = document.getElementById("loading");
+    if (el && el.style.display !== "none") el.textContent = msg;
+  } catch (_) {}
+}
+
+window.onerror = function (message, source, lineno, colno, error) {
+  trace("window.onerror",
+    (message || "") + " @ " + (source || "?") + ":" + (lineno || "?"));
+  return false;
+};
+window.addEventListener("unhandledrejection", function (e) {
+  var r = e && e.reason;
+  trace("unhandledrejection", r && (r.message || r) || "(no reason)");
+});
+
+trace("html-loaded");
+trace("epubjs-present", typeof ePub);
+trace("jszip-present", typeof JSZip);
 
 var book = null;
 var rendition = null;
@@ -44,18 +75,27 @@ function notify(name, payload) {
     if (window.MagazineReader && window.MagazineReader[name]) {
       window.MagazineReader[name](payload || "");
     }
-  } catch (e) {}
+  } catch (_) {}
 }
 
 function loadBook(base64Data, href) {
   pendingHref = href || null;
+  trace("loadBook.entered", "href=" + (href || "(none)") +
+    " base64Length=" + (base64Data ? base64Data.length : 0));
   try {
+    if (typeof ePub !== "function") {
+      throw new Error("epub.js not loaded — typeof ePub=" + (typeof ePub));
+    }
     var raw = atob(base64Data);
+    trace("base64-decoded", "rawBytes=" + raw.length);
     var len = raw.length;
     var bytes = new Uint8Array(len);
     for (var i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
+    trace("uint8array-built");
 
     book = ePub(bytes.buffer);
+    trace("epub-created");
+
     rendition = book.renderTo("viewer", {
       width: "100%",
       height: "100%",
@@ -63,6 +103,7 @@ function loadBook(base64Data, href) {
       spread: "none",
       allowScriptedContent: false
     });
+    trace("rendition-created");
 
     rendition.themes.fontSize(currentFontSize + "px");
     rendition.themes.default({
@@ -71,35 +112,29 @@ function loadBook(base64Data, href) {
     });
 
     rendition.on("relocated", function (location) {
-      try {
-        notify("onRelocated", location.start.cfi || "");
-      } catch (e) {}
+      try { notify("onRelocated", location.start.cfi || ""); } catch (_) {}
     });
 
     book.ready.then(function () {
-      document.getElementById("loading").style.display = "none";
-      var target = pendingHref;
-      if (target) {
-        rendition.display(target);
-      } else {
-        rendition.display();
-      }
+      trace("book.ready-resolved");
+      var hide = document.getElementById("loading");
+      if (hide) hide.style.display = "none";
+      return pendingHref ? rendition.display(pendingHref) : rendition.display();
+    }).then(function () {
+      trace("rendition.display-resolved");
       notify("onReady", "");
     }).catch(function (e) {
+      trace("book.ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
     });
   } catch (e) {
+    trace("loadBook.threw", e && (e.message || e));
     notify("onError", "loadBook: " + (e && e.message || e));
-    document.getElementById("loading").textContent = "Error: " + (e && e.message || e);
   }
 }
 
-function goNext() {
-  if (rendition) rendition.next();
-}
-function goPrev() {
-  if (rendition) rendition.prev();
-}
+function goNext() { if (rendition) rendition.next(); }
+function goPrev() { if (rendition) rendition.prev(); }
 function goToHref(href) {
   pendingHref = href;
   if (rendition) rendition.display(href);
@@ -109,12 +144,12 @@ function setFontSize(px) {
   if (rendition) rendition.themes.fontSize(currentFontSize + "px");
 }
 
-// Make functions reachable from Kotlin via webView.evaluateJavascript.
 window.loadBook = loadBook;
 window.goNext = goNext;
 window.goPrev = goPrev;
 window.goToHref = goToHref;
 window.setFontSize = setFontSize;
+trace("api-exposed");
 </script>
 </body>
 </html>
