@@ -6,13 +6,20 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100vh; overflow: hidden; background: #ffffff; color: #000000; }
-  body { position: relative; }
+  /* position: fixed + inset:0 gives #viewer dimensions relative to the
+     WebView's visual viewport directly. Crucially DO NOT set explicit
+     width/height in vh/vw — Android WebView resolves both 100vh and
+     100vw to 0 in this configuration, and an explicit height:0 wins
+     over the position-anchor stretch. Letting the four anchors pin
+     the box gives the right dimensions. */
   #viewer {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%; overflow: hidden;
+    position: fixed; inset: 0;
+    overflow: hidden;
   }
   #loading {
-    position: absolute; top: 50%; left: 50%;
+    /* position: fixed against the visual viewport. body height collapses
+       to 0 in this setup so position:absolute would centre against 0. */
+    position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     font-family: monospace; font-size: 12px; color: #888;
     z-index: 5;
@@ -136,6 +143,42 @@ function loadBook(base64Data, href) {
 
     book = ePub(bytes.buffer);
     trace("epub-created");
+
+    // Repair producer-side HTML defects before each chapter is parsed
+    // as XHTML (which fails on the Economist's malformed drop-caps and
+    // unclosed <img> tags). archive.getText is the entry point epub.js
+    // calls for every chapter's source text.
+    if (book.archive) {
+      var origGetText = book.archive.getText.bind(book.archive);
+      book.archive.getText = function (path, encoding) {
+        var result = origGetText(path, encoding);
+        // Pass-through for everything that isn't a chapter — same return
+        // type the original returned (sync or Promise). Some epub.js
+        // callers expect sync return; wrapping unconditionally with
+        // Promise.resolve breaks them (saw "charCodeAt of undefined"
+        // because a Promise was being treated as a Uint8Array).
+        if (!/\.x?html?$/i.test(path || "")) return result;
+        return Promise.resolve(result).then(function (text) {
+          if (typeof text !== "string") return text;
+          // Drop-cap collapse: <span class="drop-cap"><</span>b>L</b>
+          // → <span class="drop-cap">L</span>
+          text = text.replace(
+            /<span class="drop-cap"><\/span>b>([A-Za-z])<\/b>/g,
+            "<span class=\"drop-cap\">$1</span>"
+          );
+          // Self-close void elements XHTML requires closed.
+          text = text.replace(
+            /<(img|br|hr|input|source|wbr)([^>]*)>/g,
+            function (m, tag, attrs) {
+              if (attrs.trimEnd().endsWith("/")) return m;
+              return "<" + tag + attrs + " />";
+            }
+          );
+          return text;
+        });
+      };
+      trace("archive-patched");
+    }
 
     rendition = book.renderTo("viewer", {
       width: "100%",
