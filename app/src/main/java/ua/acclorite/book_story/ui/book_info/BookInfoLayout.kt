@@ -31,7 +31,6 @@ fun BookInfoLayout(
     showTitleDialog: (BookInfoEvent.OnShowTitleDialog) -> Unit,
     showAuthorDialog: (BookInfoEvent.OnShowAuthorDialog) -> Unit,
     showDescriptionDialog: (BookInfoEvent.OnShowDescriptionDialog) -> Unit,
-    showMoveDialog: (BookInfoEvent.OnShowMoveDialog) -> Unit,
     showDeleteDialog: (BookInfoEvent.OnShowDeleteDialog) -> Unit,
     navigateToReader: (BookInfoEvent.OnNavigateToReader) -> Unit
 ) {
@@ -65,7 +64,6 @@ fun BookInfoLayout(
         item {
             Spacer(Modifier.height(18.dp))
             BookInfoLayoutActions(
-                showMoveDialog = showMoveDialog,
                 showDeleteDialog = showDeleteDialog
             )
         }

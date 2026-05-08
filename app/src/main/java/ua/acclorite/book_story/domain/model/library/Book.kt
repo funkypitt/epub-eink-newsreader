@@ -29,7 +29,6 @@ data class Book(
     val progress: Float,
 
     val lastOpened: Long?,
-    val categories: List<Int>,
     val currentArticleHref: String? = null,
 ) : Parcelable {
     companion object {
@@ -44,7 +43,6 @@ data class Book(
             scrollOffset = 0,
             progress = 0f,
             lastOpened = null,
-            categories = emptyList(),
             currentArticleHref = null,
         )
     }

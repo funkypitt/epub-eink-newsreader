@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,7 +20,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.getOrElse
 import kotlinx.parcelize.Parcelize
 import ua.acclorite.book_story.presentation.navigator.Screen
-import ua.acclorite.book_story.presentation.settings.SettingsModel
 import ua.acclorite.book_story.ui.book_info.BookInfoContent
 import ua.acclorite.book_story.ui.book_info.BookInfoEffects
 
@@ -30,7 +28,6 @@ data class BookInfoScreen(val bookId: Int) : Screen, Parcelable {
 
     companion object {
         const val DELETE_DIALOG = "delete_dialog"
-        const val MOVE_DIALOG = "move_dialog"
         const val TITLE_DIALOG = "title_dialog"
         const val AUTHOR_DIALOG = "author_dialog"
         const val DESCRIPTION_DIALOG = "description_dialog"
@@ -45,15 +42,9 @@ data class BookInfoScreen(val bookId: Int) : Screen, Parcelable {
     @Composable
     override fun Content() {
         val screenModel = hiltViewModel<BookInfoModel>()
-        val settingsModel = hiltViewModel<SettingsModel>()
 
-        val settingsState = settingsModel.state.collectAsStateWithLifecycle()
         val state = screenModel.state.collectAsStateWithLifecycle()
         val listState = rememberLazyListState()
-
-        val categories = remember(settingsState.value.categories) {
-            settingsState.value.categories.filterNot { it.id == -1 }
-        }
 
         LaunchedEffect(Unit) {
             screenModel.init(
@@ -80,7 +71,6 @@ data class BookInfoScreen(val bookId: Int) : Screen, Parcelable {
                 book = state.value.book,
                 file = state.value.file,
                 loadingFile = state.value.loadingFile,
-                categories = categories,
                 bottomSheet = state.value.bottomSheet,
                 dialog = state.value.dialog,
                 listState = listState,
@@ -101,12 +91,9 @@ data class BookInfoScreen(val bookId: Int) : Screen, Parcelable {
                 dismissDialog = screenModel::onEvent,
                 showChangeCoverBottomSheet = screenModel::onEvent,
                 showDetailsBottomSheet = screenModel::onEvent,
-                showMoveDialog = screenModel::onEvent,
-                actionMoveDialog = screenModel::onEvent,
                 showDeleteDialog = screenModel::onEvent,
                 actionDeleteDialog = screenModel::onEvent,
                 navigateToReader = screenModel::onEvent,
-                navigateToLibrarySettings = screenModel::onEvent,
                 navigateBack = screenModel::onEvent
             )
         }

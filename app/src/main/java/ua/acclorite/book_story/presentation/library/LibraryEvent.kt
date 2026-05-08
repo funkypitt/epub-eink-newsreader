@@ -7,7 +7,6 @@
 package ua.acclorite.book_story.presentation.library
 
 import androidx.compose.runtime.Immutable
-import ua.acclorite.book_story.domain.model.library.Category
 import ua.acclorite.book_story.presentation.library.model.SelectableBook
 
 @Immutable
@@ -40,23 +39,11 @@ sealed class LibraryEvent {
         val books: List<SelectableBook>
     ) : LibraryEvent()
 
-    data object OnShowMoveDialog : LibraryEvent()
-
-    data class OnActionMoveDialog(
-        val selectedCategories: List<Category>
-    ) : LibraryEvent()
-
     data object OnShowDeleteDialog : LibraryEvent()
 
     data object OnActionDeleteDialog : LibraryEvent()
 
     data object OnDismissDialog : LibraryEvent()
-
-    data object OnShowFilterBottomSheet : LibraryEvent()
-
-    data object OnDismissBottomSheet : LibraryEvent()
-
-    data object OnNavigateToLibrarySettings : LibraryEvent()
 
     data object OnNavigateToBrowse : LibraryEvent()
 

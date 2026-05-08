@@ -12,7 +12,6 @@ import ua.acclorite.book_story.core.BottomSheet
 import ua.acclorite.book_story.core.Dialog
 import ua.acclorite.book_story.domain.model.file.File
 import ua.acclorite.book_story.domain.model.library.Book
-import ua.acclorite.book_story.domain.model.library.Category
 import ua.acclorite.book_story.presentation.book_info.BookInfoEvent
 
 @Composable
@@ -20,7 +19,6 @@ fun BookInfoContent(
     book: Book,
     file: File?,
     loadingFile: Boolean,
-    categories: List<Category>,
     bottomSheet: BottomSheet?,
     dialog: Dialog?,
     listState: LazyListState,
@@ -35,10 +33,8 @@ fun BookInfoContent(
     actionDescriptionDialog: (BookInfoEvent.OnActionDescriptionDialog) -> Unit,
     showPathDialog: (BookInfoEvent.OnShowPathDialog) -> Unit,
     actionPathDialog: (BookInfoEvent.OnActionPathDialog) -> Unit,
-    showMoveDialog: (BookInfoEvent.OnShowMoveDialog) -> Unit,
     showDeleteDialog: (BookInfoEvent.OnShowDeleteDialog) -> Unit,
     actionDeleteDialog: (BookInfoEvent.OnActionDeleteDialog) -> Unit,
-    actionMoveDialog: (BookInfoEvent.OnActionMoveDialog) -> Unit,
     changeCover: (BookInfoEvent.OnChangeCover) -> Unit,
     resetCover: (BookInfoEvent.OnResetCover) -> Unit,
     deleteCover: (BookInfoEvent.OnDeleteCover) -> Unit,
@@ -46,21 +42,17 @@ fun BookInfoContent(
     dismissDialog: (BookInfoEvent.OnDismissDialog) -> Unit,
     dismissBottomSheet: (BookInfoEvent.OnDismissBottomSheet) -> Unit,
     navigateToReader: (BookInfoEvent.OnNavigateToReader) -> Unit,
-    navigateToLibrarySettings: (BookInfoEvent.OnNavigateToLibrarySettings) -> Unit,
     navigateBack: (BookInfoEvent.OnNavigateBack) -> Unit
 ) {
     BookInfoDialog(
         dialog = dialog,
         book = book,
-        categories = categories,
         actionTitleDialog = actionTitleDialog,
         actionAuthorDialog = actionAuthorDialog,
         actionDescriptionDialog = actionDescriptionDialog,
         actionPathDialog = actionPathDialog,
         actionDeleteDialog = actionDeleteDialog,
-        actionMoveDialog = actionMoveDialog,
         dismissDialog = dismissDialog,
-        navigateToLibrarySettings = navigateToLibrarySettings
     )
 
     BookInfoBottomSheet(
@@ -85,7 +77,6 @@ fun BookInfoContent(
         showDescriptionDialog = showDescriptionDialog,
         showChangeCoverBottomSheet = showChangeCoverBottomSheet,
         showDetailsBottomSheet = showDetailsBottomSheet,
-        showMoveDialog = showMoveDialog,
         showDeleteDialog = showDeleteDialog,
         navigateToReader = navigateToReader,
         navigateBack = navigateBack

@@ -318,7 +318,6 @@ class BrowseModel @Inject constructor(
                         }
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        LibraryScreen.scrollToPageCompositionChannel.trySend(0)
 
                         _effects.emit(BrowseEffect.OnNavigateToLibrary)
                         _effects.emit(BrowseEffect.OnBooksAdded)
@@ -395,7 +394,6 @@ class BrowseModel @Inject constructor(
                             }
                         }
                         LibraryScreen.refreshListChannel.trySend(0)
-                        LibraryScreen.scrollToPageCompositionChannel.trySend(0)
                         _effects.emit(BrowseEffect.OnNavigateToLibrary)
                         if (files.isNotEmpty()) {
                             _effects.emit(BrowseEffect.OnBooksAdded)

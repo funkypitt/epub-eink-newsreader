@@ -14,10 +14,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import ua.acclorite.book_story.R
 import ua.acclorite.book_story.presentation.book_info.BookInfoScreen
 import ua.acclorite.book_story.presentation.browse.BrowseScreen
-import ua.acclorite.book_story.presentation.history.HistoryScreen
 import ua.acclorite.book_story.presentation.library.LibraryEffect
 import ua.acclorite.book_story.presentation.open_book.OpenBookScreen
-import ua.acclorite.book_story.presentation.settings.LibrarySettingsScreen
 import ua.acclorite.book_story.ui.common.helpers.showToast
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
@@ -33,18 +31,9 @@ fun LibraryEffects(effects: SharedFlow<LibraryEffect>, focusRequester: FocusRequ
                     focusRequester.requestFocus()
                 }
 
-                is LibraryEffect.OnBooksMoved -> {
-                    context.getString(R.string.books_moved)
-                        .showToast(context = context)
-                }
-
                 is LibraryEffect.OnBooksDeleted -> {
                     context.getString(R.string.books_deleted)
                         .showToast(context = context)
-                }
-
-                is LibraryEffect.OnNavigateToLibrarySettings -> {
-                    navigator.push(LibrarySettingsScreen)
                 }
 
                 is LibraryEffect.OnNavigateToBrowse -> {
@@ -56,7 +45,6 @@ fun LibraryEffects(effects: SharedFlow<LibraryEffect>, focusRequester: FocusRequ
                 }
 
                 is LibraryEffect.OnNavigateToReader -> {
-                    HistoryScreen.insertHistoryChannel.trySend(effect.id)
                     navigator.push(OpenBookScreen(effect.id))
                 }
             }

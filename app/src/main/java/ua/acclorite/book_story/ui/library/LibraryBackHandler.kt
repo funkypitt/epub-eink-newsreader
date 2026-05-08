@@ -7,7 +7,6 @@
 package ua.acclorite.book_story.ui.library
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -22,7 +21,6 @@ import ua.acclorite.book_story.ui.common.helpers.showToast
 fun LibraryBackHandler(
     hasSelectedItems: Boolean,
     showSearch: Boolean,
-    pagerState: PagerState,
     doublePressExit: Boolean,
     clearSelectedBooks: (LibraryEvent.OnClearSelectedBooks) -> Unit,
     searchVisibility: (LibraryEvent.OnSearchVisibility) -> Unit
@@ -39,13 +37,6 @@ fun LibraryBackHandler(
 
         if (showSearch) {
             searchVisibility(LibraryEvent.OnSearchVisibility(false))
-            return@BackHandler
-        }
-
-        if (pagerState.currentPage > 0) {
-            scope.launch {
-                pagerState.animateScrollToPage(0)
-            }
             return@BackHandler
         }
 

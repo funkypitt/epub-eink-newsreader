@@ -13,9 +13,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import ua.acclorite.book_story.R
 import ua.acclorite.book_story.domain.model.library.Book
 import ua.acclorite.book_story.presentation.book_info.BookInfoEffect
-import ua.acclorite.book_story.presentation.history.HistoryScreen
 import ua.acclorite.book_story.presentation.open_book.OpenBookScreen
-import ua.acclorite.book_story.presentation.settings.LibrarySettingsScreen
 import ua.acclorite.book_story.ui.common.helpers.showToast
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
@@ -72,22 +70,12 @@ fun BookInfoEffects(effects: SharedFlow<BookInfoEffect>, book: Book) {
                         .showToast(context = context)
                 }
 
-                is BookInfoEffect.OnBookMoved -> {
-                    context.getString(R.string.book_moved)
-                        .showToast(context = context)
-                }
-
                 is BookInfoEffect.OnNavigateBack -> {
                     navigator.pop()
                 }
 
-                is BookInfoEffect.OnNavigateToLibrarySettings -> {
-                    navigator.push(LibrarySettingsScreen)
-                }
-
                 is BookInfoEffect.OnNavigateToReader -> {
                     if (book.id != -1) {
-                        HistoryScreen.insertHistoryChannel.trySend(book.id)
                         navigator.push(OpenBookScreen(book.id))
                     }
                 }

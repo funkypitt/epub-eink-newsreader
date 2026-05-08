@@ -10,7 +10,6 @@ package ua.acclorite.book_story.data.settings
 
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -32,16 +31,7 @@ import ua.acclorite.book_story.presentation.browse.model.BrowseSortOrder
 import ua.acclorite.book_story.presentation.library.model.LibraryLayout
 import ua.acclorite.book_story.presentation.library.model.LibrarySortOrder
 import ua.acclorite.book_story.presentation.library.model.LibraryTitlePosition
-import ua.acclorite.book_story.presentation.reader.model.ReaderColorEffects
-import ua.acclorite.book_story.presentation.reader.model.ReaderFontThickness
-import ua.acclorite.book_story.presentation.reader.model.ReaderHorizontalGesture
-import ua.acclorite.book_story.presentation.reader.model.ReaderProgressCount
-import ua.acclorite.book_story.presentation.reader.model.ReaderScreenOrientation
-import ua.acclorite.book_story.presentation.reader.model.ReaderTextAlignment
-import ua.acclorite.book_story.ui.reader.data.ReaderData
-import ua.acclorite.book_story.ui.reader.model.FontWithName
 import ua.acclorite.book_story.ui.theme.model.DarkTheme
-import ua.acclorite.book_story.ui.theme.model.HorizontalAlignment
 import ua.acclorite.book_story.ui.theme.model.PureDark
 import ua.acclorite.book_story.ui.theme.model.Theme
 import ua.acclorite.book_story.ui.theme.model.ThemeContrast
@@ -114,177 +104,6 @@ class SettingsManager @Inject constructor(
         key = booleanPreferencesKey("show_navigation_labels"), default = true
     )
 
-    /* ------ Reader ----------------------------- */
-    val fontFamily = setting<FontWithName, String>(
-        key = stringPreferencesKey("font"), default = ReaderData.fonts[0],
-        serialize = { it.id }, deserialize = { id ->
-            ReaderData.fonts.find { it.id == id } ?: ReaderData.fonts[0]
-        }
-    )
-    val fontThickness = setting<ReaderFontThickness, String>(
-        key = stringPreferencesKey("font_thickness"), default = ReaderFontThickness.NORMAL,
-        serialize = { it.name }, deserialize = { ReaderFontThickness.valueOf(it) }
-    )
-    val italic = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("font_style"), default = false
-    )
-    val fontSize = setting<Int, Int>(
-        key = intPreferencesKey("font_size"), default = 16
-    )
-    val lineHeight = setting<Int, Int>(
-        key = intPreferencesKey("line_height"), default = 4
-    )
-    val paragraphHeight = setting<Int, Int>(
-        key = intPreferencesKey("paragraph_height"), default = 8
-    )
-    val paragraphIndentation = setting<Int, Int>(
-        key = intPreferencesKey("paragraph_indentation_int"), default = 0
-    )
-    val sidePadding = setting<Int, Int>(
-        key = intPreferencesKey("side_padding"), default = 6
-    )
-    val verticalPadding = setting<Int, Int>(
-        key = intPreferencesKey("vertical_padding"), default = 0
-    )
-    val doubleClickTranslation = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("double_click_translation"), default = false
-    )
-    val fastColorPresetChange = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("fast_color_preset_change"), default = true
-    )
-    val textAlignment = setting<ReaderTextAlignment, String>(
-        key = stringPreferencesKey("text_alignment"), default = ReaderTextAlignment.JUSTIFY,
-        serialize = { it.name }, deserialize = { ReaderTextAlignment.valueOf(it) }
-    )
-    val letterSpacing = setting<Int, Int>(
-        key = intPreferencesKey("letter_spacing"), default = 0
-    )
-    val cutoutPadding = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("cutout_padding"), default = false
-    )
-    val fullscreen = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("fullscreen"), default = true
-    )
-    val keepScreenOn = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("keep_screen_on"), default = true
-    )
-    val hideBarsOnFastScroll = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("hide_bars_on_fast_scroll"), default = false
-    )
-    val perceptionExpander = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("perception_expander"), default = false
-    )
-    val perceptionExpanderPadding = setting<Int, Int>(
-        key = intPreferencesKey("perception_expander_padding"), default = 5
-    )
-    val perceptionExpanderThickness = setting<Int, Int>(
-        key = intPreferencesKey("perception_expander_thickness"), default = 4
-    )
-    val horizontalLimiter = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("horizontal_limiter"), default = false
-    )
-    val horizontalLimiterHeight = setting<Int, Int>(
-        key = intPreferencesKey("horizontal_limiter_height"), default = 6
-    )
-    val horizontalLimiterVerticalOffset = setting<Float, Double>(
-        key = doublePreferencesKey("horizontal_limiter_vertical_offset"), default = 0.5f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val horizontalLimiterRuler = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("horizontal_limiter_ruler"), default = true
-    )
-    val horizontalLimiterRulerThickness = setting<Int, Int>(
-        key = intPreferencesKey("horizontal_limiter_ruler_thickness"), default = 4
-    )
-    val horizontalLimiterDimming = setting<Float, Double>(
-        key = doublePreferencesKey("horizontal_limiter_dimming"), default = 0.0f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val screenOrientation = setting<ReaderScreenOrientation, String>(
-        key = stringPreferencesKey("screen_orientation"), default = ReaderScreenOrientation.DEFAULT,
-        serialize = { it.name }, deserialize = { ReaderScreenOrientation.valueOf(it) }
-    )
-    val customScreenBrightness = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("custom_screen_brightness"), default = false
-    )
-    val screenBrightness = setting<Float, Double>(
-        key = doublePreferencesKey("screen_brightness"), default = 0.5f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val horizontalGesture = setting<ReaderHorizontalGesture, String>(
-        key = stringPreferencesKey("horizontal_gesture"), default = ReaderHorizontalGesture.OFF,
-        serialize = { it.name }, deserialize = { ReaderHorizontalGesture.valueOf(it) }
-    )
-    val horizontalGestureScroll = setting<Float, Double>(
-        key = doublePreferencesKey("horizontal_gesture_scroll"), default = 0.7f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val horizontalGestureSensitivity = setting<Float, Double>(
-        key = doublePreferencesKey("horizontal_gesture_sensitivity"), default = 0.6f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val horizontalGestureAlphaAnim = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("horizontal_gesture_alpha_anim_bool"), default = true
-    )
-    val horizontalGesturePullAnim = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("horizontal_gesture_pull_anim"), default = true
-    )
-    val horizontalGestureDisableScrolling = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("horizontal_gesture_disable_scrolling"), default = false
-    )
-    val bottomBarPadding = setting<Int, Int>(
-        key = intPreferencesKey("bottom_bar_padding"), default = 0
-    )
-    val highlightedReading = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("highlighted_reading"), default = false
-    )
-    val highlightedReadingThickness = setting<Int, Int>(
-        key = intPreferencesKey("highlighted_reading_thickness"), default = 2
-    )
-    val chapterTitleAlignment = setting<ReaderTextAlignment, String>(
-        key = stringPreferencesKey("chapter_title_alignment"),
-        default = ReaderTextAlignment.JUSTIFY,
-        serialize = { it.name }, deserialize = { ReaderTextAlignment.valueOf(it) }
-    )
-    val images = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("images"), default = true
-    )
-    val imagesCaptions = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("images_captions"), default = true
-    )
-    val imagesCornersRoundness = setting<Int, Int>(
-        key = intPreferencesKey("images_corners_roundness"), default = 8
-    )
-    val imagesAlignment = setting<HorizontalAlignment, String>(
-        key = stringPreferencesKey("images_alignment"), default = HorizontalAlignment.START,
-        serialize = { it.name }, deserialize = { HorizontalAlignment.valueOf(it) }
-    )
-    val imagesWidth = setting<Float, Double>(
-        key = doublePreferencesKey("images_width"), default = 0.8f,
-        serialize = { it.toDouble() }, deserialize = { it.toFloat() }
-    )
-    val imagesColorEffects = setting<ReaderColorEffects, String>(
-        key = stringPreferencesKey("images_color_effects"), default = ReaderColorEffects.OFF,
-        serialize = { it.name }, deserialize = { ReaderColorEffects.valueOf(it) }
-    )
-    val progressBar = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("progress_bar"), default = false
-    )
-    val progressBarPadding = setting<Int, Int>(
-        key = intPreferencesKey("progress_bar_padding"), default = 4
-    )
-    val progressBarAlignment = setting<HorizontalAlignment, String>(
-        key = stringPreferencesKey("progress_bar_alignment"), default = HorizontalAlignment.CENTER,
-        serialize = { it.name }, deserialize = { HorizontalAlignment.valueOf(it) }
-    )
-    val progressBarFontSize = setting<Int, Int>(
-        key = intPreferencesKey("progress_bar_font_size"), default = 8
-    )
-    val progressCount = setting<ReaderProgressCount, String>(
-        key = stringPreferencesKey("progress_count"), default = ReaderProgressCount.PERCENTAGE,
-        serialize = { it.name }, deserialize = { ReaderProgressCount.valueOf(it) }
-    )
-
     /* ------ Library ---------------------------- */
     val libraryLayout = setting<LibraryLayout, String>(
         key = stringPreferencesKey("library_layout"), default = LibraryLayout.GRID,
@@ -309,12 +128,6 @@ class SettingsManager @Inject constructor(
     val libraryShowBookCount = setting<Boolean, Boolean>(
         key = booleanPreferencesKey("library_show_book_count"), default = true
     )
-    val libraryShowCategoryTabs = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("library_show_category_tabs"), default = true
-    )
-    val libraryShowDefaultTab = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("library_show_default_tab"), default = false
-    )
     val librarySortOrder = setting<LibrarySortOrder, String>(
         // NAME descending = reverse-chronological for date-prefixed filenames
         // (e.g. 2026-04-25-economist.epub) — newspapers land newest-first.
@@ -323,9 +136,6 @@ class SettingsManager @Inject constructor(
     )
     val librarySortOrderDescending = setting<Boolean, Boolean>(
         key = booleanPreferencesKey("library_sort_order_descending"), default = true
-    )
-    val libraryPerCategorySort = setting<Boolean, Boolean>(
-        key = booleanPreferencesKey("library_per_category_sort"), default = false
     )
 
     /* ------ Browse ----------------------------- */

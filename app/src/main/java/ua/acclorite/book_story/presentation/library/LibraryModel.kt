@@ -25,16 +25,13 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.domain.use_case.book.DeleteBookUseCase
 import ua.acclorite.book_story.domain.use_case.book.SearchBooksUseCase
-import ua.acclorite.book_story.domain.use_case.book.UpdateBookUseCase
 import ua.acclorite.book_story.presentation.browse.BrowseScreen
-import ua.acclorite.book_story.presentation.history.HistoryScreen
 import ua.acclorite.book_story.presentation.library.model.SelectableBook
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
 
 @HiltViewModel
 class LibraryModel @Inject constructor(
-    private val updateBookUseCase: UpdateBookUseCase,
     private val searchBooksUseCase: SearchBooksUseCase,
     private val deleteBookUseCase: DeleteBookUseCase
 ) : ViewModel() {
@@ -210,46 +207,6 @@ class LibraryModel @Inject constructor(
                     }
                 }
 
-                is LibraryEvent.OnShowMoveDialog -> {
-                    _state.update {
-                        it.copy(
-                            dialog = LibraryScreen.MOVE_DIALOG
-                        )
-                    }
-                }
-
-                is LibraryEvent.OnActionMoveDialog -> {
-                    withContext(Dispatchers.Default) {
-                        _state.value.books.forEach { book ->
-                            if (!book.selected) return@forEach
-                            updateBookUseCase(
-                                book.data.copy(
-                                    categories = event.selectedCategories.map { it.id }
-                                )
-                            )
-                        }
-
-                        _state.update {
-                            it.copy(
-                                books = it.books.map { book ->
-                                    if (!book.selected) return@map book
-                                    book.copy(
-                                        data = book.data.copy(
-                                            categories = event.selectedCategories.map { it.id }
-                                        ),
-                                        selected = false
-                                    )
-                                },
-                                hasSelectedItems = false,
-                                dialog = null
-                            )
-                        }
-
-                        HistoryScreen.refreshListChannel.trySend(0)
-                        _effects.emit(LibraryEffect.OnBooksMoved)
-                    }
-                }
-
                 is LibraryEvent.OnShowDeleteDialog -> {
                     _state.update {
                         it.copy(
@@ -273,7 +230,6 @@ class LibraryModel @Inject constructor(
                             )
                         }
 
-                        HistoryScreen.refreshListChannel.trySend(0)
                         BrowseScreen.refreshListChannel.trySend(Unit)
                         _effects.emit(LibraryEffect.OnBooksDeleted)
                     }
@@ -285,26 +241,6 @@ class LibraryModel @Inject constructor(
                             dialog = null
                         )
                     }
-                }
-
-                is LibraryEvent.OnShowFilterBottomSheet -> {
-                    _state.update {
-                        it.copy(
-                            bottomSheet = LibraryScreen.FILTER_BOTTOM_SHEET
-                        )
-                    }
-                }
-
-                is LibraryEvent.OnDismissBottomSheet -> {
-                    _state.update {
-                        it.copy(
-                            bottomSheet = null
-                        )
-                    }
-                }
-
-                is LibraryEvent.OnNavigateToLibrarySettings -> {
-                    _effects.emit(LibraryEffect.OnNavigateToLibrarySettings)
                 }
 
                 is LibraryEvent.OnNavigateToBrowse -> {

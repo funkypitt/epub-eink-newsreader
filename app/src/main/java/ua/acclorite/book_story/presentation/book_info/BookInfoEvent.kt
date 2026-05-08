@@ -9,7 +9,6 @@ package ua.acclorite.book_story.presentation.book_info
 import android.graphics.Bitmap
 import androidx.compose.runtime.Immutable
 import ua.acclorite.book_story.core.ui.UIText
-import ua.acclorite.book_story.domain.model.library.Category
 
 @Immutable
 sealed class BookInfoEvent {
@@ -57,17 +56,9 @@ sealed class BookInfoEvent {
 
     data object OnActionDeleteDialog : BookInfoEvent()
 
-    data object OnShowMoveDialog : BookInfoEvent()
-
-    data class OnActionMoveDialog(
-        val selectedCategories: List<Category>
-    ) : BookInfoEvent()
-
     data object OnDismissDialog : BookInfoEvent()
 
     data object OnNavigateBack : BookInfoEvent()
-
-    data object OnNavigateToLibrarySettings : BookInfoEvent()
 
     data object OnNavigateToReader : BookInfoEvent()
 }

@@ -72,7 +72,6 @@ class EpubFileParser @Inject constructor() : FileParser {
                         progress = 0f,
                         filePath = cachedFile.path,
                         lastOpened = null,
-                        categories = emptyList(),
                         coverImage = null
                     )
                 }

@@ -22,8 +22,8 @@ import javax.inject.Inject
 
 sealed class OpenBookTarget {
     abstract val bookId: Int
-    data class Reader(override val bookId: Int) : OpenBookTarget()
     data class Magazine(override val bookId: Int) : OpenBookTarget()
+    data class Unsupported(override val bookId: Int) : OpenBookTarget()
 }
 
 @HiltViewModel
@@ -57,7 +57,7 @@ class OpenBookModel @Inject constructor(
             } ?: false
             _target.tryEmit(
                 if (isMagazine) OpenBookTarget.Magazine(bookId)
-                else OpenBookTarget.Reader(bookId)
+                else OpenBookTarget.Unsupported(bookId)
             )
         }
     }

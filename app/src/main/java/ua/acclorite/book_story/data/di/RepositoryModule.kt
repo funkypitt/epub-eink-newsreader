@@ -14,31 +14,17 @@ import ua.acclorite.book_story.data.local.data_store.DataStore
 import ua.acclorite.book_story.data.local.data_store.DataStoreImpl
 import ua.acclorite.book_story.data.mapper.book.BookMapper
 import ua.acclorite.book_story.data.mapper.book.BookMapperImpl
-import ua.acclorite.book_story.data.mapper.category.CategoryMapper
-import ua.acclorite.book_story.data.mapper.category.CategoryMapperImpl
-import ua.acclorite.book_story.data.mapper.color_preset.ColorPresetMapper
-import ua.acclorite.book_story.data.mapper.color_preset.ColorPresetMapperImpl
 import ua.acclorite.book_story.data.mapper.file.FileMapper
 import ua.acclorite.book_story.data.mapper.file.FileMapperImpl
-import ua.acclorite.book_story.data.mapper.history.HistoryMapper
-import ua.acclorite.book_story.data.mapper.history.HistoryMapperImpl
 import ua.acclorite.book_story.data.parser.cover.CoverParser
 import ua.acclorite.book_story.data.parser.cover.CoverParserImpl
 import ua.acclorite.book_story.data.parser.file.FileParser
 import ua.acclorite.book_story.data.parser.file.FileParserImpl
-import ua.acclorite.book_story.data.parser.text.TextParser
-import ua.acclorite.book_story.data.parser.text.TextParserImpl
 import ua.acclorite.book_story.data.repository.BookRepositoryImpl
-import ua.acclorite.book_story.data.repository.CategoryRepositoryImpl
-import ua.acclorite.book_story.data.repository.ColorPresetRepositoryImpl
 import ua.acclorite.book_story.data.repository.FileSystemRepositoryImpl
-import ua.acclorite.book_story.data.repository.HistoryRepositoryImpl
 import ua.acclorite.book_story.data.repository.PermissionRepositoryImpl
 import ua.acclorite.book_story.domain.repository.BookRepository
-import ua.acclorite.book_story.domain.repository.CategoryRepository
-import ua.acclorite.book_story.domain.repository.ColorPresetRepository
 import ua.acclorite.book_story.domain.repository.FileSystemRepository
-import ua.acclorite.book_story.domain.repository.HistoryRepository
 import ua.acclorite.book_story.domain.repository.PermissionRepository
 import javax.inject.Singleton
 
@@ -59,18 +45,6 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindHistoryRepository(
-        historyRepositoryImpl: HistoryRepositoryImpl
-    ): HistoryRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindColorPresetRepository(
-        colorPresetRepositoryImpl: ColorPresetRepositoryImpl
-    ): ColorPresetRepository
-
-    @Binds
-    @Singleton
     abstract fun bindFileSystemRepository(
         fileSystemRepositoryImpl: FileSystemRepositoryImpl
     ): FileSystemRepository
@@ -83,33 +57,9 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCategoryRepository(
-        categoryRepositoryImpl: CategoryRepositoryImpl
-    ): CategoryRepository
-
-    @Binds
-    @Singleton
     abstract fun bindBookMapper(
         bookMapperImpl: BookMapperImpl
     ): BookMapper
-
-    @Binds
-    @Singleton
-    abstract fun bindHistoryMapper(
-        historyMapperImpl: HistoryMapperImpl
-    ): HistoryMapper
-
-    @Binds
-    @Singleton
-    abstract fun bindColorPresetMapper(
-        colorPresetMapperImpl: ColorPresetMapperImpl
-    ): ColorPresetMapper
-
-    @Binds
-    @Singleton
-    abstract fun bindCategoryMapper(
-        categoryMapperImpl: CategoryMapperImpl
-    ): CategoryMapper
 
     @Binds
     @Singleton
@@ -128,10 +78,4 @@ abstract class RepositoryModule {
     abstract fun bindCoverParser(
         coverParserImpl: CoverParserImpl
     ): CoverParser
-
-    @Binds
-    @Singleton
-    abstract fun bindTextParser(
-        textParserImpl: TextParserImpl
-    ): TextParser
 }

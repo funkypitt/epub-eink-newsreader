@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoveUp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,7 +24,6 @@ import ua.acclorite.book_story.presentation.book_info.BookInfoEvent
 
 @Composable
 fun BookInfoLayoutActions(
-    showMoveDialog: (BookInfoEvent.OnShowMoveDialog) -> Unit,
     showDeleteDialog: (BookInfoEvent.OnShowDeleteDialog) -> Unit
 ) {
     Row(
@@ -39,16 +37,6 @@ fun BookInfoLayoutActions(
         BookInfoLayoutActionsItem(
             modifier = Modifier.weight(1f),
             alignmentStart = true,
-            title = stringResource(id = R.string.move),
-            icon = Icons.Default.MoveUp,
-            onClick = {
-                showMoveDialog(BookInfoEvent.OnShowMoveDialog)
-            }
-        )
-
-        BookInfoLayoutActionsItem(
-            modifier = Modifier.weight(1f),
-            alignmentStart = false,
             title = stringResource(id = R.string.delete),
             icon = Icons.Default.Delete,
             onClick = {

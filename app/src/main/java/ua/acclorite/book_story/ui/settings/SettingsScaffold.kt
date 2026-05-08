@@ -26,7 +26,6 @@ fun SettingsScaffold(
     scrollBehavior: TopAppBarScrollBehavior,
     navigateToGeneralSettings: () -> Unit,
     navigateToAppearanceSettings: () -> Unit,
-    navigateToReaderSettings: () -> Unit,
     navigateToLibrarySettings: () -> Unit,
     navigateToBrowseSettings: () -> Unit,
     navigateToStart: () -> Unit,
@@ -51,7 +50,6 @@ fun SettingsScaffold(
             paddingValues = paddingValues,
             navigateToGeneralSettings = navigateToGeneralSettings,
             navigateToAppearanceSettings = navigateToAppearanceSettings,
-            navigateToReaderSettings = navigateToReaderSettings,
             navigateToLibrarySettings = navigateToLibrarySettings,
             navigateToBrowseSettings = navigateToBrowseSettings
         )

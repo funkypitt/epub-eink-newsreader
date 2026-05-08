@@ -13,10 +13,8 @@ import ua.acclorite.book_story.data.local.room.BookDatabase
 import ua.acclorite.book_story.data.mapper.book.BookMapper
 import ua.acclorite.book_story.data.mapper.file.FileMapper
 import ua.acclorite.book_story.data.parser.cover.CoverParser
-import ua.acclorite.book_story.data.parser.text.TextParser
 import ua.acclorite.book_story.domain.model.file.File
 import ua.acclorite.book_story.domain.model.library.Book
-import ua.acclorite.book_story.domain.model.reader.ReaderText
 import ua.acclorite.book_story.domain.repository.BookRepository
 import ua.acclorite.book_story.domain.service.FileProvider
 import javax.inject.Inject
@@ -28,7 +26,6 @@ class BookRepositoryImpl @Inject constructor(
     private val bookMapper: BookMapper,
     private val fileMapper: FileMapper,
     private val coverParser: CoverParser,
-    private val textParser: TextParser,
     private val fileProvider: FileProvider
 ) : BookRepository {
 
@@ -44,14 +41,6 @@ class BookRepositoryImpl @Inject constructor(
                 if (it == null) throw NoSuchElementException("Couldn't get book [$bookId].")
                 else bookMapper.toBook(it)
             }
-        }
-    }
-
-    override suspend fun getText(bookId: Int): Result<List<ReaderText>> {
-        return withContext(Dispatchers.IO) {
-            getBook(bookId)
-                .mapCatching { fileProvider.getFileFromBook(it).getOrThrow() }
-                .mapCatching { textParser.parse(it) }
         }
     }
 

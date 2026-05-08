@@ -7,7 +7,6 @@
 package ua.acclorite.book_story.presentation.library
 
 import androidx.compose.runtime.Immutable
-import ua.acclorite.book_story.core.BottomSheet
 import ua.acclorite.book_story.core.Dialog
 import ua.acclorite.book_story.presentation.library.model.SelectableBook
 
@@ -25,6 +24,5 @@ data class LibraryState(
     val searchQuery: String = "",
     val hasFocused: Boolean = false,
 
-    val dialog: Dialog? = null,
-    val bottomSheet: BottomSheet? = null
+    val dialog: Dialog? = null
 )

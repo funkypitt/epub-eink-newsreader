@@ -28,7 +28,6 @@ import ua.acclorite.book_story.domain.use_case.book.ResetCoverImageUseCase
 import ua.acclorite.book_story.domain.use_case.book.UpdateBookUseCase
 import ua.acclorite.book_story.domain.use_case.book.UpdateCoverImageUseCase
 import ua.acclorite.book_story.presentation.browse.BrowseScreen
-import ua.acclorite.book_story.presentation.history.HistoryScreen
 import ua.acclorite.book_story.presentation.library.LibraryScreen
 import javax.inject.Inject
 import kotlin.coroutines.coroutineContext
@@ -90,7 +89,6 @@ class BookInfoModel @Inject constructor(
                         }
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnChangedCover)
                     }
@@ -119,7 +117,6 @@ class BookInfoModel @Inject constructor(
                         }
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnResetCover)
                     }
@@ -139,7 +136,6 @@ class BookInfoModel @Inject constructor(
                         }
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnDeletedCover)
                     }
@@ -185,7 +181,6 @@ class BookInfoModel @Inject constructor(
                         updateBookUseCase(_state.value.book)
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnTitleChanged)
                     }
@@ -211,7 +206,6 @@ class BookInfoModel @Inject constructor(
                         updateBookUseCase(_state.value.book)
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnAuthorChanged)
                     }
@@ -237,7 +231,6 @@ class BookInfoModel @Inject constructor(
                         updateBookUseCase(_state.value.book)
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnDescriptionChanged)
                     }
@@ -264,7 +257,6 @@ class BookInfoModel @Inject constructor(
                         updateBookUseCase(_state.value.book)
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
 
                         _effects.emit(BookInfoEffect.OnPathChanged)
 
@@ -297,39 +289,10 @@ class BookInfoModel @Inject constructor(
                         deleteBookUseCase(_state.value.book)
 
                         LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
                         BrowseScreen.refreshListChannel.trySend(Unit)
 
                         _effects.emit(BookInfoEffect.OnBookDeleted)
                         _effects.emit(BookInfoEffect.OnNavigateBack)
-                    }
-                }
-
-                is BookInfoEvent.OnShowMoveDialog -> {
-                    _state.update {
-                        it.copy(
-                            dialog = BookInfoScreen.MOVE_DIALOG
-                        )
-                    }
-                }
-
-                is BookInfoEvent.OnActionMoveDialog -> {
-                    withContext(Dispatchers.Default) {
-                        _state.update {
-                            it.copy(
-                                book = it.book.copy(
-                                    categories = event.selectedCategories.map { it.id }
-                                ),
-                                dialog = null,
-                                bottomSheet = null
-                            )
-                        }
-                        updateBookUseCase(_state.value.book)
-
-                        LibraryScreen.refreshListChannel.trySend(0)
-                        HistoryScreen.refreshListChannel.trySend(0)
-
-                        _effects.emit(BookInfoEffect.OnBookMoved)
                     }
                 }
 
@@ -343,10 +306,6 @@ class BookInfoModel @Inject constructor(
 
                 is BookInfoEvent.OnNavigateBack -> {
                     _effects.emit(BookInfoEffect.OnNavigateBack)
-                }
-
-                is BookInfoEvent.OnNavigateToLibrarySettings -> {
-                    _effects.emit(BookInfoEffect.OnNavigateToLibrarySettings)
                 }
 
                 is BookInfoEvent.OnNavigateToReader -> {

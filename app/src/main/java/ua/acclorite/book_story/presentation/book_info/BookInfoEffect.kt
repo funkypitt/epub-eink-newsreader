@@ -28,11 +28,7 @@ sealed class BookInfoEffect {
 
     data object OnBookDeleted : BookInfoEffect()
 
-    data object OnBookMoved : BookInfoEffect()
-
     data object OnNavigateBack : BookInfoEffect()
-
-    data object OnNavigateToLibrarySettings : BookInfoEffect()
 
     data object OnNavigateToReader : BookInfoEffect()
 }

@@ -136,9 +136,6 @@ dependencies {
     // SAF
     implementation("com.anggrayudi:storage:2.2.0")
 
-    // PDF parser
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
-
     // EPUB parser
     implementation("org.jsoup:jsoup:1.21.2")
 
@@ -158,9 +155,6 @@ dependencies {
 
     // Scrollbar
     implementation("com.github.nanihadesuka:LazyColumnScrollbar:2.2.0")
-
-    // Markdown
-    implementation("org.commonmark:commonmark:0.26.0")
 
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")

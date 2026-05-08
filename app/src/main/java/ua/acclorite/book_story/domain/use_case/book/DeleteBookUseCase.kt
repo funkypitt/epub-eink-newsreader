@@ -11,7 +11,6 @@ import ua.acclorite.book_story.core.log.logI
 import ua.acclorite.book_story.core.log.logW
 import ua.acclorite.book_story.domain.model.library.Book
 import ua.acclorite.book_story.domain.repository.BookRepository
-import ua.acclorite.book_story.domain.repository.HistoryRepository
 import ua.acclorite.book_story.domain.service.CoverImageHandler
 import javax.inject.Inject
 
@@ -19,7 +18,6 @@ private const val TAG = "DeleteBook"
 
 class DeleteBookUseCase @Inject constructor(
     private val bookRepository: BookRepository,
-    private val historyRepository: HistoryRepository,
     private val coverImageHandler: CoverImageHandler
 ) {
 
@@ -29,11 +27,6 @@ class DeleteBookUseCase @Inject constructor(
         // Deleting cover image
         book.coverImage?.let { coverImageHandler.deleteCover(it) }?.onFailure {
             logW(TAG, "Could not delete cover image with error: ${it.message}")
-        }
-
-        // Deleting history
-        historyRepository.deleteHistoryForBook(bookId = book.id).onFailure {
-            logW(TAG, "Could not delete history for [${book.title}] with error: ${it.message}")
         }
 
         // Deleting book

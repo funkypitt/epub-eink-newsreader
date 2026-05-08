@@ -28,7 +28,6 @@ fun BookInfoScaffold(
     showTitleDialog: (BookInfoEvent.OnShowTitleDialog) -> Unit,
     showAuthorDialog: (BookInfoEvent.OnShowAuthorDialog) -> Unit,
     showDescriptionDialog: (BookInfoEvent.OnShowDescriptionDialog) -> Unit,
-    showMoveDialog: (BookInfoEvent.OnShowMoveDialog) -> Unit,
     showDeleteDialog: (BookInfoEvent.OnShowDeleteDialog) -> Unit,
     navigateToReader: (BookInfoEvent.OnNavigateToReader) -> Unit,
     navigateBack: (BookInfoEvent.OnNavigateBack) -> Unit
@@ -56,7 +55,6 @@ fun BookInfoScaffold(
             showAuthorDialog = showAuthorDialog,
             showDescriptionDialog = showDescriptionDialog,
             showChangeCoverBottomSheet = showChangeCoverBottomSheet,
-            showMoveDialog = showMoveDialog,
             showDeleteDialog = showDeleteDialog,
             navigateToReader = navigateToReader
         )
