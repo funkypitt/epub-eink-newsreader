@@ -62,9 +62,9 @@ class MagazinePaginationTest {
     }
 
     @Test
-    fun `injectArticleMargins inserts override style at end of head`() {
+    fun `prepareChapterHtml inserts override style at end of head`() {
         val html = """<html><head><link rel="stylesheet" href="style.css"/></head><body><p>x</p></body></html>"""
-        val out = injectArticleMargins(html)
+        val out = prepareChapterHtml(html)
         // Override style sits *after* the producer's link so it wins specificity ties.
         val styleIdx = out.indexOf("padding: 14px")
         val linkIdx = out.indexOf("style.css")
@@ -74,10 +74,28 @@ class MagazinePaginationTest {
     }
 
     @Test
-    fun `injectArticleMargins prepends head when missing`() {
+    fun `prepareChapterHtml prepends head when missing`() {
         val html = "<body><p>headless</p></body>"
-        val out = injectArticleMargins(html)
+        val out = prepareChapterHtml(html)
         assert(out.startsWith("<head>")) { "should fall back to prepending <head>" }
         assert("padding: 14px" in out)
+    }
+
+    @Test
+    fun `prepareChapterHtml repairs Economist's broken drop-cap markup`() {
+        // Real fragment from chapter-04.xhtml of the Economist fixture: the
+        // outer drop-cap span ends at a literal `<`, leaking <b>L</b> as
+        // plain text. Browsers render the `<` as a huge first letter and
+        // `b>L</b>` as visible text next to it.
+        val broken = """<p class="first"><span class="drop-cap"><</span>b>L</b>argely because Donald Trump</p>"""
+        val out = prepareChapterHtml(broken)
+        assert("""<span class="drop-cap">L</span>""" in out) {
+            "expected repaired drop-cap; got: $out"
+        }
+        assert("""<span class="drop-cap"><""" !in out) {
+            "broken pattern still present after repair"
+        }
+        // The plain-text 'b>' leak is gone.
+        assert("b>L</b>" !in out) { "leftover <b> tag-as-text not stripped" }
     }
 }

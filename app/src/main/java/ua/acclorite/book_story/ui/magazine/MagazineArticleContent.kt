@@ -157,7 +157,7 @@ private fun ChapterWebView(
                 if (wv.tag != targetUrl) {
                     wv.loadDataWithBaseURL(
                         targetUrl,
-                        injectArticleMargins(html),
+                        prepareChapterHtml(html),
                         "text/html",
                         "UTF-8",
                         null,
@@ -229,20 +229,29 @@ internal fun defaultTextZoomForScreenWidth(screenWidthDp: Int): Int = when {
 private val HEAD_CLOSE = Regex("(?i)</head>")
 
 /**
- * Lays the chapter body out as a horizontal series of viewport-sized
- * columns and forces small inner margins. Page-turn navigation then
- * advances by one column-width — content always breaks on line /
- * paragraph boundaries, never mid-line, so the article body cannot
- * leak into the header or footer band. Inspired by epub.js's
- * `flow: "paginated"` and Pluralis' TextPainter pre-pagination.
+ * The Economist generator emits a malformed drop-cap pattern that browsers
+ * render as a literal `<` followed by `b>L</b>` plain-text — easy to
+ * mistake for a UI bug (looks like the back-arrow icon overlapping the
+ * first line). The intended structure is `<span class="drop-cap">L</span>`,
+ * so we collapse the broken form back to that.
  *
- * The viewport meta is added so 100vw / 100vh resolve correctly on
- * Android WebView regardless of what the chapter declares.
- *
- * Inserted at the end of <head> so it overrides the producer's
- * `style.css`. Falls back to prepending if the chapter has no <head>.
+ * Source: `<span class="drop-cap"><</span>b>L</b>` — the outer span ends
+ * at the literal `<`, leaking the inner `<b>` as text.
  */
-internal fun injectArticleMargins(html: String): String {
+private val BROKEN_DROP_CAP = Regex(
+    """<span class="drop-cap"><</span>b>([A-Za-z])</b>"""
+)
+
+/**
+ * Repairs known producer-side HTML defects and injects a small override
+ * `<style>` block at the end of `<head>` so the producer's `style.css`
+ * doesn't leave the article body without sane margins or with images
+ * that overflow the viewport.
+ */
+internal fun prepareChapterHtml(html: String): String {
+    val repaired = BROKEN_DROP_CAP.replace(html) { match ->
+        """<span class="drop-cap">${match.groupValues[1]}</span>"""
+    }
     val style = """
         <style>
           html, body { margin: 0 !important; }
@@ -251,9 +260,9 @@ internal fun injectArticleMargins(html: String): String {
           .hero-img img, .img-container img { width: 100% !important; }
         </style>
     """.trimIndent()
-    return if (HEAD_CLOSE.containsMatchIn(html)) {
-        HEAD_CLOSE.replaceFirst(html, "$style</head>")
+    return if (HEAD_CLOSE.containsMatchIn(repaired)) {
+        HEAD_CLOSE.replaceFirst(repaired, "$style</head>")
     } else {
-        "<head>$style</head>$html"
+        "<head>$style</head>$repaired"
     }
 }
