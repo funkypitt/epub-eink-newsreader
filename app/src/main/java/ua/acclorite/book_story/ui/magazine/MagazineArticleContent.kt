@@ -166,8 +166,11 @@ private fun ChapterWebView(
             },
         )
 
-        // Tap zones: left third = page back, right third = page forward.
-        // Zero animation — `scrollBy` is instant, fitting e-ink rendering.
+        // Tap zones: left third = previous column, right third = next column.
+        // The injected CSS lays the chapter body out as horizontal columns,
+        // each exactly viewport-sized — so paging is just `scrollTo` by
+        // viewport-width, which always lands on a column boundary (no
+        // half-line at the band edge).
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -178,8 +181,8 @@ private fun ChapterWebView(
                         indication = null,
                     ) {
                         webView?.let { wv ->
-                            val newY = (wv.scrollY - wv.height).coerceAtLeast(0)
-                            wv.scrollTo(0, newY)
+                            val newX = (wv.scrollX - wv.width).coerceAtLeast(0)
+                            wv.scrollTo(newX, 0)
                         }
                     }
             )
@@ -193,9 +196,9 @@ private fun ChapterWebView(
                         indication = null,
                     ) {
                         webView?.let { wv ->
-                            val maxY = (wv.contentHeight * wv.resources.displayMetrics.density).toInt() - wv.height
-                            val newY = (wv.scrollY + wv.height).coerceAtMost(maxY.coerceAtLeast(0))
-                            wv.scrollTo(0, newY)
+                            if (wv.canScrollHorizontally(1)) {
+                                wv.scrollTo(wv.scrollX + wv.width, 0)
+                            }
                         }
                     }
             )
@@ -227,17 +230,48 @@ internal fun defaultTextZoomForScreenWidth(screenWidthDp: Int): Int = when {
 private val HEAD_CLOSE = Regex("(?i)</head>")
 
 /**
- * Forces small inner margins on the chapter body and constrains images to
- * the viewport width. Inserted last in <head> so it overrides the producer's
- * style.css. Falls back to prepending if the chapter has no <head>.
+ * Lays the chapter body out as a horizontal series of viewport-sized
+ * columns and forces small inner margins. Page-turn navigation then
+ * advances by one column-width — content always breaks on line /
+ * paragraph boundaries, never mid-line, so the article body cannot
+ * leak into the header or footer band. Inspired by epub.js's
+ * `flow: "paginated"` and Pluralis' TextPainter pre-pagination.
+ *
+ * The viewport meta is added so 100vw / 100vh resolve correctly on
+ * Android WebView regardless of what the chapter declares.
+ *
+ * Inserted at the end of <head> so it overrides the producer's
+ * `style.css`. Falls back to prepending if the chapter has no <head>.
  */
 internal fun injectArticleMargins(html: String): String {
     val style = """
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
-          html, body { margin: 0 !important; }
-          body { padding: 14px 16px !important; box-sizing: border-box !important; }
-          img, figure, video { max-width: 100% !important; height: auto !important; }
+          html, body {
+            margin: 0 !important;
+            height: 100% !important;
+          }
+          html { overflow-y: hidden !important; }
+          body {
+            padding: 14px 16px !important;
+            box-sizing: border-box !important;
+            column-width: 100vw !important;
+            column-gap: 0 !important;
+            column-fill: auto !important;
+            height: 100% !important;
+            overflow-y: hidden !important;
+          }
+          img, figure, video {
+            max-width: 100% !important;
+            height: auto !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
           .hero-img img, .img-container img { width: 100% !important; }
+          h1, h2, h3, h4, h5, h6, p, blockquote {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
         </style>
     """.trimIndent()
     return if (HEAD_CLOSE.containsMatchIn(html)) {
