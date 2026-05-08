@@ -66,7 +66,7 @@ class MagazinePaginationTest {
         val html = """<html><head><link rel="stylesheet" href="style.css"/></head><body><p>x</p></body></html>"""
         val out = prepareChapterHtml(html)
         // Override style sits *after* the producer's link so it wins specificity ties.
-        val styleIdx = out.indexOf("padding: 14px")
+        val styleIdx = out.indexOf("padding: 0 16px")
         val linkIdx = out.indexOf("style.css")
         val headCloseIdx = out.indexOf("</head>")
         assert(linkIdx in 0 until styleIdx) { "override must come after producer style.css" }
@@ -78,7 +78,7 @@ class MagazinePaginationTest {
         val html = "<body><p>headless</p></body>"
         val out = prepareChapterHtml(html)
         assert(out.startsWith("<head>")) { "should fall back to prepending <head>" }
-        assert("padding: 14px" in out)
+        assert("padding: 0 16px" in out)
     }
 
     @Test

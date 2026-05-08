@@ -332,7 +332,9 @@ internal fun prepareChapterHtml(html: String): String {
         <style>
           html, body { margin: 0 !important; }
           body {
-            padding: 14px 16px !important;
+            /* No vertical padding — keeps line tops at integer multiples
+               of line-height so the JS paginator's snap math is exact. */
+            padding: 0 16px !important;
             box-sizing: border-box !important;
             line-height: 1.6 !important;
           }
@@ -343,15 +345,24 @@ internal fun prepareChapterHtml(html: String): String {
     val script = """
         <script>
         (function () {
-          function lineHeight() {
-            var lh = parseFloat(getComputedStyle(document.body).lineHeight);
-            return (isFinite(lh) && lh > 0) ? lh : 24;
+          function lineHeightPx() {
+            var bs = getComputedStyle(document.body);
+            var raw = bs.lineHeight;
+            var fs = parseFloat(bs.fontSize) || 16;
+            if (!raw || raw === 'normal') return fs * 1.2;
+            var n = parseFloat(raw);
+            if (!isFinite(n) || n <= 0) return fs * 1.2;
+            // line-height as a length (e.g. "25.6px"): use directly.
+            // line-height as a unitless multiplier (e.g. "1.6"): multiply
+            // by font-size. This second branch was the bug — parseFloat
+            // returned 1.6 and the whole alignment treated that as pixels.
+            return raw.indexOf('px') !== -1 ? n : n * fs;
           }
           window.__mr_page = function (direction) {
-            var lh = lineHeight();
+            var lh = lineHeightPx();
             var vh = window.innerHeight;
-            // Step: viewport minus one line, then snap DOWN to a whole
-            // line multiple so the next page starts exactly at a line.
+            // Step: viewport minus one line, snapped DOWN to a whole-line
+            // multiple so the next page starts exactly at a line top.
             var step = Math.floor((vh - lh) / lh) * lh;
             if (step < lh) step = lh;
             var max = Math.max(
@@ -359,8 +370,9 @@ internal fun prepareChapterHtml(html: String): String {
               document.documentElement.scrollHeight - vh
             );
             var target = Math.max(0, Math.min(max, window.scrollY + direction * step));
-            // Snap target to a line boundary too.
-            target = Math.floor(target / lh) * lh;
+            // Snap to a line top: with body padding-top:0, line tops are
+            // at integer multiples of lh.
+            target = Math.round(target / lh) * lh;
             window.scrollTo(0, target);
           };
         })();
