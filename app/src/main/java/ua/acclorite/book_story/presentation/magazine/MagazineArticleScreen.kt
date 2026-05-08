@@ -19,7 +19,8 @@ import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
 @Parcelize
 data class MagazineArticleScreen(
-    val bookId: Int,
+    val bookId: Int? = null,
+    val epubPath: String? = null,
     val articleHref: String,
 ) : Screen, Parcelable {
 
@@ -29,7 +30,12 @@ data class MagazineArticleScreen(
         val model = hiltViewModel<MagazineArticleModel>()
         val state by model.state.collectAsStateWithLifecycle()
 
-        LaunchedEffect(bookId, articleHref) { model.load(bookId, articleHref) }
+        LaunchedEffect(bookId, epubPath, articleHref) {
+            when {
+                bookId != null -> model.loadFromLibrary(bookId, articleHref)
+                epubPath != null -> model.loadFromPath(epubPath, articleHref)
+            }
+        }
 
         MagazineArticleContent(
             state = state,

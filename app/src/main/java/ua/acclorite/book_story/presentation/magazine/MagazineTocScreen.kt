@@ -18,8 +18,20 @@ import ua.acclorite.book_story.presentation.navigator.Screen
 import ua.acclorite.book_story.ui.magazine.MagazineTocContent
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
 
+/**
+ * Magazine TOC screen. Reachable from two paths:
+ * - Library: opens a book by id (looked up via [GetBookUseCase] and
+ *   resolved through SAF [FileProvider]). Last-read article is persisted.
+ * - Intent: opens a file already cached locally by [OpenIntentScreen].
+ *   No DB write-back.
+ *
+ * Exactly one of [bookId] / [epubPath] must be set.
+ */
 @Parcelize
-data class MagazineTocScreen(val bookId: Int) : Screen, Parcelable {
+data class MagazineTocScreen(
+    val bookId: Int? = null,
+    val epubPath: String? = null,
+) : Screen, Parcelable {
 
     @Composable
     override fun Content() {
@@ -27,12 +39,23 @@ data class MagazineTocScreen(val bookId: Int) : Screen, Parcelable {
         val model = hiltViewModel<MagazineTocModel>()
         val state by model.state.collectAsStateWithLifecycle()
 
-        LaunchedEffect(bookId) { model.load(bookId) }
+        LaunchedEffect(bookId, epubPath) {
+            when {
+                bookId != null -> model.loadFromLibrary(bookId)
+                epubPath != null -> model.loadFromPath(epubPath)
+            }
+        }
 
         MagazineTocContent(
             state = state,
             onArticleClick = { article ->
-                navigator.push(MagazineArticleScreen(bookId = bookId, articleHref = article.contentHref))
+                navigator.push(
+                    MagazineArticleScreen(
+                        bookId = bookId,
+                        epubPath = epubPath,
+                        articleHref = article.contentHref,
+                    )
+                )
             },
             onHome = { navigator.pop() },
             onAppHome = { navigator.popToRoot() },

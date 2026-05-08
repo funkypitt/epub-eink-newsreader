@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
 import ua.acclorite.book_story.domain.service.FileProvider
 import ua.acclorite.book_story.domain.use_case.book.GetBookUseCase
+import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,46 +31,66 @@ class MagazineTocModel @Inject constructor(
     private val _state = MutableStateFlow(MagazineTocState())
     val state = _state.asStateFlow()
 
-    fun load(bookId: Int) {
+    /**
+     * Library mode — resolves the book by id and locates its ePub through
+     * SAF-based [FileProvider]. Persists `currentArticleHref` for the
+     * "highlight last-read" feature.
+     */
+    fun loadFromLibrary(bookId: Int) {
         if (_state.value.issue != null) return
         viewModelScope.launch {
             val book = getBook(bookId)
             if (book == null) {
-                _state.update {
-                    it.copy(isLoading = false, errorMessage = "Book #$bookId not found")
-                }
+                _state.update { it.copy(isLoading = false, errorMessage = "Book #$bookId not found") }
                 return@launch
             }
             val rawFile = withContext(Dispatchers.IO) {
                 fileProvider.getFileFromBook(book).getOrNull()?.rawFile
             }
             if (rawFile == null) {
-                _state.update {
-                    it.copy(isLoading = false, errorMessage = "Could not access ePub file.")
-                }
+                _state.update { it.copy(isLoading = false, errorMessage = "Could not access ePub file.") }
                 return@launch
             }
-            val issue = withContext(Dispatchers.IO) {
-                magazineParser.parse(rawFile)
-            }
-            if (issue == null) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        epubPath = rawFile.absolutePath,
-                        errorMessage = "This ePub is not a magazine.",
-                    )
-                }
+            parseAndPublish(rawFile, currentArticleHref = book.currentArticleHref)
+        }
+    }
+
+    /**
+     * Direct mode — opens an ePub already living in the app's filesDir
+     * (e.g. one that arrived via the system's "Open with" sheet). No
+     * library entry, no last-read tracking.
+     */
+    fun loadFromPath(epubPath: String) {
+        if (_state.value.issue != null) return
+        viewModelScope.launch {
+            val rawFile = File(epubPath)
+            if (!rawFile.exists()) {
+                _state.update { it.copy(isLoading = false, errorMessage = "File not found: $epubPath") }
                 return@launch
             }
+            parseAndPublish(rawFile, currentArticleHref = null)
+        }
+    }
+
+    private suspend fun parseAndPublish(rawFile: File, currentArticleHref: String?) {
+        val issue = withContext(Dispatchers.IO) { magazineParser.parse(rawFile) }
+        if (issue == null) {
             _state.update {
                 it.copy(
                     isLoading = false,
-                    issue = issue,
                     epubPath = rawFile.absolutePath,
-                    currentArticleHref = book.currentArticleHref,
+                    errorMessage = "This ePub is not a magazine.",
                 )
             }
+            return
+        }
+        _state.update {
+            it.copy(
+                isLoading = false,
+                issue = issue,
+                epubPath = rawFile.absolutePath,
+                currentArticleHref = currentArticleHref,
+            )
         }
     }
 }

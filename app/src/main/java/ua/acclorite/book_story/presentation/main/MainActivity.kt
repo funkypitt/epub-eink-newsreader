@@ -9,6 +9,7 @@
 package ua.acclorite.book_story.presentation.main
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.database.CursorWindow
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -30,6 +31,7 @@ import ua.acclorite.book_story.presentation.library.LibraryModel
 import ua.acclorite.book_story.presentation.library.LibraryScreen
 import ua.acclorite.book_story.presentation.navigator.NavigatorItem
 import ua.acclorite.book_story.presentation.navigator.StackEvent
+import ua.acclorite.book_story.presentation.open_book.OpenIntentScreen
 import ua.acclorite.book_story.presentation.settings.SettingsModel
 import ua.acclorite.book_story.presentation.start.StartScreen
 import ua.acclorite.book_story.ui.common.components.navigation_bar.NavigationBar
@@ -73,6 +75,14 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
+        // If launched via Android's "Open with" sheet (Telegram, Files, etc.)
+        // capture the URI now so the navigator can route to OpenIntentScreen
+        // instead of the regular Library/Start landing.
+        val initialIntentUri = intent
+            ?.takeIf { it.action == Intent.ACTION_VIEW }
+            ?.data
+            ?.toString()
+
         setContent {
             // Initializing Screen Models
             val libraryModel = hiltViewModel<LibraryModel>()
@@ -110,8 +120,12 @@ class MainActivity : AppCompatActivity() {
                         themeContrast = settings.themeContrast.value
                     ) {
                         Navigator(
-                            initialScreen = if (settings.showStartScreen.value) StartScreen
-                            else LibraryScreen,
+                            initialScreen = when {
+                                initialIntentUri != null ->
+                                    OpenIntentScreen(uriString = initialIntentUri)
+                                settings.showStartScreen.value -> StartScreen
+                                else -> LibraryScreen
+                            },
                             transitionSpec = { lastEvent ->
                                 when (lastEvent) {
                                     StackEvent.DEFAULT -> {

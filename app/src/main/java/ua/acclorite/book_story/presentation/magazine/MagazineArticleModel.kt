@@ -35,8 +35,9 @@ class MagazineArticleModel @Inject constructor(
     val state = _state.asStateFlow()
 
     private var loadedBookId: Int? = null
+    private var loadedPath: String? = null
 
-    fun load(bookId: Int, articleHref: String) {
+    fun loadFromLibrary(bookId: Int, articleHref: String) {
         viewModelScope.launch {
             if (loadedBookId != bookId || _state.value.issue == null) {
                 val book = getBook(bookId)
@@ -53,9 +54,7 @@ class MagazineArticleModel @Inject constructor(
                     }
                     return@launch
                 }
-                val issue = withContext(Dispatchers.IO) {
-                    magazineParser.parse(rawFile)
-                }
+                val issue = withContext(Dispatchers.IO) { magazineParser.parse(rawFile) }
                 if (issue == null) {
                     _state.update {
                         MagazineArticleState(
@@ -67,6 +66,32 @@ class MagazineArticleModel @Inject constructor(
                 }
                 _state.update { it.copy(issue = issue, epubPath = rawFile.absolutePath) }
                 loadedBookId = bookId
+                loadedPath = null
+            }
+            selectArticle(articleHref)
+        }
+    }
+
+    fun loadFromPath(epubPath: String, articleHref: String) {
+        viewModelScope.launch {
+            if (loadedPath != epubPath || _state.value.issue == null) {
+                val rawFile = File(epubPath)
+                if (!rawFile.exists()) {
+                    _state.update {
+                        MagazineArticleState(isLoading = false, errorMessage = "File not found: $epubPath")
+                    }
+                    return@launch
+                }
+                val issue = withContext(Dispatchers.IO) { magazineParser.parse(rawFile) }
+                if (issue == null) {
+                    _state.update {
+                        MagazineArticleState(isLoading = false, errorMessage = "This ePub is not a magazine.")
+                    }
+                    return@launch
+                }
+                _state.update { it.copy(issue = issue, epubPath = rawFile.absolutePath) }
+                loadedPath = epubPath
+                loadedBookId = null
             }
             selectArticle(articleHref)
         }
@@ -106,7 +131,7 @@ class MagazineArticleModel @Inject constructor(
                     errorMessage = if (html == null) "Could not read article." else null,
                 )
             }
-            // Persist last-read article so reopening the magazine highlights it.
+            // Library mode only: remember last-read article for the highlight feature.
             loadedBookId?.let { bookId ->
                 val book = getBook(bookId) ?: return@let
                 if (book.currentArticleHref != articleHref) {
