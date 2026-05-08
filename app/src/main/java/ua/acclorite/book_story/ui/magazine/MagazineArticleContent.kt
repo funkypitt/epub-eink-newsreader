@@ -10,6 +10,7 @@ import android.annotation.SuppressLint
 import android.util.Base64
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -139,6 +140,7 @@ private fun EpubJsArticleView(
     onTapCenter: () -> Unit,
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var pageLoaded by remember { mutableStateOf(false) }
     var bookLoaded by remember(epubPath) { mutableStateOf(false) }
 
     val epubBase64 = remember(epubPath) {
@@ -156,8 +158,12 @@ private fun EpubJsArticleView(
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = false
                     settings.allowContentAccess = false
-                    settings.allowFileAccessFromFileURLs = false
-                    settings.allowUniversalAccessFromFileURLs = false
+                    // epub.js loads the chapter inside a sandboxed iframe and
+                    // needs both flags on to render images / inline styles
+                    // packaged inside the ePub. funky-openlib uses the same
+                    // setup successfully.
+                    settings.allowFileAccessFromFileURLs = true
+                    settings.allowUniversalAccessFromFileURLs = true
                     settings.builtInZoomControls = false
                     settings.displayZoomControls = false
                     settings.useWideViewPort = false
@@ -166,9 +172,15 @@ private fun EpubJsArticleView(
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
                     setBackgroundColor(android.graphics.Color.WHITE)
-                    // Block direct touch — page-turn only via the Compose
-                    // tap zones overlaid below.
                     setOnTouchListener { _, _ -> true }
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            // reader.html has finished parsing — loadBook is
+                            // now defined and safe to call from Kotlin.
+                            pageLoaded = true
+                        }
+                    }
                     addJavascriptInterface(
                         MagazineReaderBridge(
                             readyCallback = { /* tap zones already mounted */ },
@@ -181,17 +193,19 @@ private fun EpubJsArticleView(
                 }
             },
             update = { wv ->
-                if (!bookLoaded && epubBase64 != null) {
+                if (pageLoaded && !bookLoaded && epubBase64 != null) {
                     val js = "loadBook(${quoteJs(epubBase64)}, ${quoteJs(chapterHref)});"
                     wv.evaluateJavascript(js, null)
                     bookLoaded = true
-                } else if (bookLoaded) {
+                } else if (pageLoaded && bookLoaded) {
                     // Article changed within the same loaded ePub.
                     wv.evaluateJavascript("goToHref(${quoteJs(chapterHref)});", null)
                 }
-                // Map textZoomPercent (~70-220%) onto a font-size in px.
-                val fontPx = (12 + (textZoomPercent - 70) * 16 / 150).coerceIn(10, 40)
-                wv.evaluateJavascript("setFontSize($fontPx);", null)
+                if (pageLoaded) {
+                    // Map textZoomPercent (~70-220%) onto a font-size in px.
+                    val fontPx = (12 + (textZoomPercent - 70) * 16 / 150).coerceIn(10, 40)
+                    wv.evaluateJavascript("setFontSize($fontPx);", null)
+                }
             },
         )
 
