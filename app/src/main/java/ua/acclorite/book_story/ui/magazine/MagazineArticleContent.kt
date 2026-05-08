@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +70,7 @@ fun MagazineArticleContent(
             nextEnabled = state.hasNext,
             centerText = state.article?.category,
         )
+        Spacer(Modifier.height(8.dp))
 
         // Clip the article body strictly to its allotted band so the WebView
         // (or any oversized image inside it) cannot bleed into the header /
@@ -88,6 +90,8 @@ fun MagazineArticleContent(
                 else -> CenteredText("No content.")
             }
         }
+
+        Spacer(Modifier.height(8.dp))
 
         MagazineFooterBar(
             onDecrease = { textZoom = (textZoom - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) },
@@ -255,7 +259,10 @@ internal fun prepareChapterHtml(html: String): String {
     val style = """
         <style>
           html, body { margin: 0 !important; }
-          body { padding: 14px 16px !important; box-sizing: border-box !important; }
+          /* Generous top/bottom padding so text descenders never butt up
+             against the article band's edges (and through them, the
+             header / footer chrome). */
+          body { padding: 24px 16px !important; box-sizing: border-box !important; }
           img, figure, video { max-width: 100% !important; height: auto !important; }
           .hero-img img, .img-container img { width: 100% !important; }
         </style>
