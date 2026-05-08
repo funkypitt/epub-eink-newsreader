@@ -130,15 +130,8 @@ private fun ChapterWebView(
                     settings.allowContentAccess = false
                     settings.builtInZoomControls = false
                     settings.displayZoomControls = false
-                    // useWideViewPort=true tells the WebView to honour the
-                    // <meta name="viewport"> tag we inject (width=device-width)
-                    // — without it the WebView falls back to a 980px default
-                    // viewport and our 100vh/100vw resolve to nonsense.
-                    // loadWithOverviewMode=false: don't scale the document to
-                    // fit the screen; we want it at 1:1 so column-width: 100vw
-                    // produces real-viewport-sized columns.
-                    settings.useWideViewPort = true
-                    settings.loadWithOverviewMode = false
+                    settings.useWideViewPort = false
+                    settings.loadWithOverviewMode = true
                     overScrollMode = WebView.OVER_SCROLL_NEVER
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
@@ -175,11 +168,8 @@ private fun ChapterWebView(
             },
         )
 
-        // Tap zones: left third = previous column, right third = next column.
-        // The injected CSS lays the chapter body out as horizontal columns,
-        // each exactly viewport-sized — so paging is just `scrollTo` by
-        // viewport-width, which always lands on a column boundary (no
-        // half-line at the band edge).
+        // Tap zones: left third = page back, right third = page forward.
+        // Vertical scrollBy of one viewport — instant, no animation.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -190,8 +180,8 @@ private fun ChapterWebView(
                         indication = null,
                     ) {
                         webView?.let { wv ->
-                            val newX = (wv.scrollX - wv.width).coerceAtLeast(0)
-                            wv.scrollTo(newX, 0)
+                            val newY = (wv.scrollY - wv.height).coerceAtLeast(0)
+                            wv.scrollTo(0, newY)
                         }
                     }
             )
@@ -205,8 +195,8 @@ private fun ChapterWebView(
                         indication = null,
                     ) {
                         webView?.let { wv ->
-                            if (wv.canScrollHorizontally(1)) {
-                                wv.scrollTo(wv.scrollX + wv.width, 0)
+                            if (wv.canScrollVertically(1)) {
+                                wv.scrollTo(0, wv.scrollY + wv.height)
                             }
                         }
                     }
@@ -254,34 +244,11 @@ private val HEAD_CLOSE = Regex("(?i)</head>")
  */
 internal fun injectArticleMargins(html: String): String {
     val style = """
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
           html, body { margin: 0 !important; }
-          html {
-            height: 100vh !important;
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-          }
-          body {
-            height: 100vh !important;
-            padding: 14px 16px !important;
-            box-sizing: border-box !important;
-            column-width: 100vw !important;
-            column-gap: 0 !important;
-            column-fill: auto !important;
-            overflow-y: hidden !important;
-          }
-          img, figure, video {
-            max-width: 100% !important;
-            height: auto !important;
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
+          body { padding: 14px 16px !important; box-sizing: border-box !important; }
+          img, figure, video { max-width: 100% !important; height: auto !important; }
           .hero-img img, .img-container img { width: 100% !important; }
-          h1, h2, h3, h4, h5, h6, p, blockquote {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
         </style>
     """.trimIndent()
     return if (HEAD_CLOSE.containsMatchIn(html)) {

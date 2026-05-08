@@ -66,7 +66,7 @@ class MagazinePaginationTest {
         val html = """<html><head><link rel="stylesheet" href="style.css"/></head><body><p>x</p></body></html>"""
         val out = injectArticleMargins(html)
         // Override style sits *after* the producer's link so it wins specificity ties.
-        val styleIdx = out.indexOf("column-width")
+        val styleIdx = out.indexOf("padding: 14px")
         val linkIdx = out.indexOf("style.css")
         val headCloseIdx = out.indexOf("</head>")
         assert(linkIdx in 0 until styleIdx) { "override must come after producer style.css" }
@@ -78,18 +78,6 @@ class MagazinePaginationTest {
         val html = "<body><p>headless</p></body>"
         val out = injectArticleMargins(html)
         assert(out.startsWith("<head>")) { "should fall back to prepending <head>" }
-        assert("column-width" in out)
-    }
-
-    @Test
-    fun `injectArticleMargins enables horizontal-column pagination`() {
-        // The whole point of the override is to convert the WebView's body into
-        // a series of viewport-sized horizontal columns so page-turn never
-        // splits a line. Lock in the load-bearing properties.
-        val out = injectArticleMargins("<html><head></head><body><p>x</p></body></html>")
-        assert("column-width: 100vw" in out)
-        assert("column-fill: auto" in out)
-        assert("overflow-y: hidden" in out)
-        assert("break-inside: avoid" in out)
+        assert("padding: 14px" in out)
     }
 }
