@@ -7,28 +7,27 @@
 package ua.acclorite.book_story.ui.magazine
 
 import android.annotation.SuppressLint
+import android.util.Base64
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,32 +35,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import ua.acclorite.book_story.data.parser.magazine.MagazineWebViewClient
 import ua.acclorite.book_story.presentation.magazine.MagazineArticleState
 import java.io.File
 
 private const val ZOOM_MIN = 70
 private const val ZOOM_MAX = 220
 private const val ZOOM_STEP = 10
-
-/**
- * Height of the opaque white band drawn over the WebView's bottom edge.
- * Hides the half-cut line that would otherwise sit there because we
- * vertical-scroll an arbitrarily-tall document inside a viewport-sized
- * WebView. Combined with a matching reduction in the page-turn step, the
- * masked line reappears in full as the first line of the next page —
- * cheap analogue to Pluralis' TextPainter pre-pagination.
- *
- * 36dp comfortably covers one line at our default text zooms (100–140%
- * with body line-height ≈ 1.6 × 16-20px ≈ 26-32px).
- */
-private val EDGE_FADE: Dp = 36.dp
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -84,36 +67,21 @@ fun MagazineArticleContent(
     KeepScreenOnEffect()
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-        // Body fills the whole screen (minus system insets) so the article
-        // text is never sharing space with the chrome — the previous design's
-        // central pain point.
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .clipToBounds()
-        ) {
+        Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
             when {
                 state.isLoading -> CenteredText("Loading…")
                 state.errorMessage != null -> CenteredText(state.errorMessage)
-                state.chapterHtml != null && state.epubPath != null && state.issue != null ->
-                    ChapterWebView(
+                state.epubPath != null && state.article != null ->
+                    EpubJsArticleView(
                         epubPath = state.epubPath,
-                        opfDir = state.issue.opfDir,
-                        chapterHref = state.article?.contentHref ?: return@Box,
-                        html = state.chapterHtml,
-                        textZoom = textZoom,
+                        chapterHref = state.article.contentHref,
+                        textZoomPercent = textZoom,
                         onTapCenter = { chromeVisible = !chromeVisible },
                     )
                 else -> CenteredText("No content.")
             }
         }
 
-        // Chrome overlay: appears on a centre tap, disappears on the next.
-        // Header chevrons step between articles in spine order; footer +/-
-        // adjusts text zoom and home pops back to the library. Both share
-        // the same chromeVisible flag — there's no need to keep the font
-        // controls permanently on screen.
         if (chromeVisible) {
             MagazineHeaderBar(
                 onPrev = onPrev,
@@ -142,25 +110,42 @@ fun MagazineArticleContent(
     }
 }
 
+/**
+ * Hosts the bundled `assets/epubjs/reader.html` in a WebView. epub.js
+ * paginates the chapter natively via `flow: "paginated"` — no scroll
+ * math, no line-alignment hacks, no half-cut letters: it lays the body
+ * out in iframe-rendered columns and swaps which column is shown on
+ * `rendition.next()`.
+ *
+ * The whole ePub is shipped to JS as a base64 string (same approach
+ * funky-openlib's e-ink reader uses); epub.js then displays the
+ * requested chapter by href.
+ *
+ * Three Compose tap zones overlay the WebView:
+ * - left  → previous page in the article
+ * - centre → toggle the chrome overlay (handled in the parent)
+ * - right → next page
+ *
+ * Page-turn is delegated to `rendition.next()` / `rendition.prev()`
+ * via `evaluateJavascript`. Font size from the footer is mapped onto
+ * `setFontSize(px)` (50% — 200% mapped to 12 — 28px).
+ */
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun ChapterWebView(
+private fun EpubJsArticleView(
     epubPath: String,
-    opfDir: String,
     chapterHref: String,
-    html: String,
-    textZoom: Int,
+    textZoomPercent: Int,
     onTapCenter: () -> Unit,
 ) {
-    var client by remember { mutableStateOf<MagazineWebViewClient?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var bookLoaded by remember(epubPath) { mutableStateOf(false) }
 
-    DisposableEffect(epubPath, opfDir) {
-        val c = MagazineWebViewClient(File(epubPath), opfDir)
-        client = c
-        onDispose {
-            c.close()
-            client = null
-        }
+    val epubBase64 = remember(epubPath) {
+        runCatching {
+            val bytes = File(epubPath).readBytes()
+            Base64.encodeToString(bytes, Base64.NO_WRAP)
+        }.getOrNull()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -168,60 +153,50 @@ private fun ChapterWebView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
-                    // JS is enabled solely for our own injected paginator
-                    // (see prepareChapterHtml) which aligns scroll to whole
-                    // lines. Producer chapters don't run scripts.
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = false
                     settings.allowContentAccess = false
+                    settings.allowFileAccessFromFileURLs = false
+                    settings.allowUniversalAccessFromFileURLs = false
                     settings.builtInZoomControls = false
                     settings.displayZoomControls = false
                     settings.useWideViewPort = false
-                    settings.loadWithOverviewMode = true
+                    settings.loadWithOverviewMode = false
                     overScrollMode = WebView.OVER_SCROLL_NEVER
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
                     setBackgroundColor(android.graphics.Color.WHITE)
+                    // Block direct touch — page-turn only via the Compose
+                    // tap zones overlaid below.
                     setOnTouchListener { _, _ -> true }
+                    addJavascriptInterface(
+                        MagazineReaderBridge(
+                            readyCallback = { /* tap zones already mounted */ },
+                            errorCallback = { /* could surface to state if needed */ },
+                        ),
+                        "MagazineReader",
+                    )
+                    loadUrl("file:///android_asset/epubjs/reader.html")
                     webView = this
                 }
             },
             update = { wv ->
-                val c = client ?: return@AndroidView
-                wv.webViewClient = c
-                wv.settings.textZoom = textZoom
-                val baseUrl = if (opfDir.isEmpty()) {
-                    "${MagazineWebViewClient.BASE_URL}/"
-                } else {
-                    "${MagazineWebViewClient.BASE_URL}/$opfDir/"
+                if (!bookLoaded && epubBase64 != null) {
+                    val js = "loadBook(${quoteJs(epubBase64)}, ${quoteJs(chapterHref)});"
+                    wv.evaluateJavascript(js, null)
+                    bookLoaded = true
+                } else if (bookLoaded) {
+                    // Article changed within the same loaded ePub.
+                    wv.evaluateJavascript("goToHref(${quoteJs(chapterHref)});", null)
                 }
-                // Reload only when the chapter changes — re-running
-                // loadDataWithBaseURL on every recomposition (e.g. textZoom
-                // bumps) would jump back to page 1 of the article. We tag the
-                // WebView with the currently-loaded URL.
-                val targetUrl = baseUrl + chapterHref
-                if (wv.tag != targetUrl) {
-                    wv.loadDataWithBaseURL(
-                        targetUrl,
-                        prepareChapterHtml(html),
-                        "text/html",
-                        "UTF-8",
-                        null,
-                    )
-                    wv.scrollTo(0, 0)
-                    wv.tag = targetUrl
-                }
+                // Map textZoomPercent (~70-220%) onto a font-size in px.
+                val fontPx = (12 + (textZoomPercent - 70) * 16 / 150).coerceIn(10, 40)
+                wv.evaluateJavascript("setFontSize($fontPx);", null)
             },
         )
 
-        // Tap zones: three equal thirds.
-        //   left   → previous page (line-aligned scroll, JS-driven)
-        //   centre → toggle chrome (header / footer overlays)
-        //   right  → next page (line-aligned scroll, JS-driven)
-        //
-        // The JS paginator (injected in prepareChapterHtml) reads the
-        // computed body line-height and snaps scrollY to a whole-line
-        // multiple — no mid-line cuts at either edge of a page.
+        // Three tap-zone thirds: left = prev page, centre = toggle chrome,
+        // right = next page. Always above the WebView in z-order.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -230,9 +205,7 @@ private fun ChapterWebView(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                    ) {
-                        webView?.evaluateJavascript("window.__mr_page(-1)", null)
-                    }
+                    ) { webView?.evaluateJavascript("goPrev();", null) }
             )
             Box(
                 modifier = Modifier
@@ -251,26 +224,55 @@ private fun ChapterWebView(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                    ) {
-                        webView?.evaluateJavascript("window.__mr_page(1)", null)
-                    }
+                    ) { webView?.evaluateJavascript("goNext();", null) }
             )
         }
-
-        // Opaque white band over the WebView's bottom edge — hides the
-        // partial line that the viewport-sized scroll inevitably cuts.
-        // Drawn after the tap zones so it's visually on top, but the
-        // tap zones are functionally below the band's height anyway
-        // (they cover the full Box; clicks at the band's pixels just
-        // page-turn, which is correct).
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .height(EDGE_FADE)
-                .background(Color.White)
-        )
     }
+}
+
+/** Bridge for callbacks from reader.html into Kotlin. */
+private class MagazineReaderBridge(
+    private val readyCallback: () -> Unit,
+    private val errorCallback: (String) -> Unit,
+) {
+    @JavascriptInterface
+    fun onReady(payload: String) {
+        readyCallback()
+    }
+
+    @JavascriptInterface
+    fun onRelocated(cfi: String) {
+        // Position tracking placeholder — could persist last-page-cfi here.
+    }
+
+    @JavascriptInterface
+    fun onError(message: String) {
+        errorCallback(message)
+    }
+}
+
+/** Properly JSON-escape a string for embedding in an evaluateJavascript call. */
+private fun quoteJs(value: String): String {
+    val sb = StringBuilder(value.length + 2)
+    sb.append('"')
+    for (c in value) {
+        when (c) {
+            '"' -> sb.append("\\\"")
+            '\\' -> sb.append("\\\\")
+            '\n' -> sb.append("\\n")
+            '\r' -> sb.append("\\r")
+            '\t' -> sb.append("\\t")
+            ' ' -> sb.append("\\u2028")
+            ' ' -> sb.append("\\u2029")
+            else -> if (c.code < 0x20) {
+                sb.append("\\u%04x".format(c.code))
+            } else {
+                sb.append(c)
+            }
+        }
+    }
+    sb.append('"')
+    return sb.toString()
 }
 
 @Composable
@@ -285,103 +287,11 @@ private fun CenteredText(text: String) {
 
 /**
  * Discrete defaults tuned for typical phone / large-phone / tablet widths.
- * Returns a textZoom percentage Android's WebView accepts directly.
+ * Returns a textZoom percentage that the Compose layer hands to the JS side.
  */
 internal fun defaultTextZoomForScreenWidth(screenWidthDp: Int): Int = when {
-    screenWidthDp < 380 -> 100   // compact phones
-    screenWidthDp < 480 -> 110   // typical phones (Pixel 10 Pro XL ≈ 412dp)
-    screenWidthDp < 700 -> 125   // large phones / small foldables
-    else -> 140                  // tablets, e-ink 7"+
-}
-
-private val HEAD_CLOSE = Regex("(?i)</head>")
-
-/**
- * The Economist generator emits a malformed drop-cap pattern that browsers
- * render as a literal `<` followed by `b>L</b>` plain-text — easy to
- * mistake for a UI bug (looks like the back-arrow icon overlapping the
- * first line). The intended structure is `<span class="drop-cap">L</span>`,
- * so we collapse the broken form back to that.
- *
- * Source: `<span class="drop-cap"><</span>b>L</b>` — the outer span ends
- * at the literal `<`, leaking the inner `<b>` as text.
- */
-private val BROKEN_DROP_CAP = Regex(
-    """<span class="drop-cap"><</span>b>([A-Za-z])</b>"""
-)
-
-/**
- * Repairs known producer-side HTML defects and injects:
- *
- * 1. A small override `<style>` block at the end of `<head>` so the
- *    producer's `style.css` doesn't leave the article body without
- *    sane margins or with images that overflow the viewport. The
- *    body's line-height is forced to a fixed multiplier so the JS
- *    paginator can read a stable per-line value.
- * 2. A `<script>` defining `window.__mr_page(direction)` that
- *    advances scroll by `(viewport - 1 line)` *snapped to a whole
- *    multiple of line-height*. This is what eliminates the half-cut
- *    line at the page edges — every page boundary is on a line
- *    boundary by construction.
- */
-internal fun prepareChapterHtml(html: String): String {
-    val repaired = BROKEN_DROP_CAP.replace(html) { match ->
-        """<span class="drop-cap">${match.groupValues[1]}</span>"""
-    }
-    val style = """
-        <style>
-          html, body { margin: 0 !important; }
-          body {
-            /* No vertical padding — keeps line tops at integer multiples
-               of line-height so the JS paginator's snap math is exact. */
-            padding: 0 16px !important;
-            box-sizing: border-box !important;
-            line-height: 1.6 !important;
-          }
-          img, figure, video { max-width: 100% !important; height: auto !important; }
-          .hero-img img, .img-container img { width: 100% !important; }
-        </style>
-    """.trimIndent()
-    val script = """
-        <script>
-        (function () {
-          function lineHeightPx() {
-            var bs = getComputedStyle(document.body);
-            var raw = bs.lineHeight;
-            var fs = parseFloat(bs.fontSize) || 16;
-            if (!raw || raw === 'normal') return fs * 1.2;
-            var n = parseFloat(raw);
-            if (!isFinite(n) || n <= 0) return fs * 1.2;
-            // line-height as a length (e.g. "25.6px"): use directly.
-            // line-height as a unitless multiplier (e.g. "1.6"): multiply
-            // by font-size. This second branch was the bug — parseFloat
-            // returned 1.6 and the whole alignment treated that as pixels.
-            return raw.indexOf('px') !== -1 ? n : n * fs;
-          }
-          window.__mr_page = function (direction) {
-            var lh = lineHeightPx();
-            var vh = window.innerHeight;
-            // Step: viewport minus one line, snapped DOWN to a whole-line
-            // multiple so the next page starts exactly at a line top.
-            var step = Math.floor((vh - lh) / lh) * lh;
-            if (step < lh) step = lh;
-            var max = Math.max(
-              0,
-              document.documentElement.scrollHeight - vh
-            );
-            var target = Math.max(0, Math.min(max, window.scrollY + direction * step));
-            // Snap to a line top: with body padding-top:0, line tops are
-            // at integer multiples of lh.
-            target = Math.round(target / lh) * lh;
-            window.scrollTo(0, target);
-          };
-        })();
-        </script>
-    """.trimIndent()
-    val injection = "$style\n$script"
-    return if (HEAD_CLOSE.containsMatchIn(repaired)) {
-        HEAD_CLOSE.replaceFirst(repaired, "$injection</head>")
-    } else {
-        "<head>$injection</head>$repaired"
-    }
+    screenWidthDp < 380 -> 100
+    screenWidthDp < 480 -> 110
+    screenWidthDp < 700 -> 125
+    else -> 140
 }

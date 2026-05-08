@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #ffffff; color: #000000; }
+  #viewer { width: 100%; height: 100%; overflow: hidden; }
+  #loading {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: sans-serif; font-size: 14px; color: #888;
+    z-index: 5;
+  }
+</style>
+<script src="jszip.min.js"></script>
+<script src="epub.min.js"></script>
+</head>
+<body>
+<div id="viewer"></div>
+<div id="loading">Loading…</div>
+<script>
+// epub.js host page for the Magazine Reader. Receives the ePub bytes
+// and the chapter href from the Android side, displays the chapter in
+// epub.js's `flow: paginated` mode, exposes goNext / goPrev / setFontSize
+// for the Compose tap-zone overlay to call.
+//
+// All call-back into Android happens through window.MagazineReader,
+// which is bound from Kotlin via WebView.addJavascriptInterface.
+
+var book = null;
+var rendition = null;
+var pendingHref = null;
+var currentFontSize = 18;
+
+function notify(name, payload) {
+  try {
+    if (window.MagazineReader && window.MagazineReader[name]) {
+      window.MagazineReader[name](payload || "");
+    }
+  } catch (e) {}
+}
+
+function loadBook(base64Data, href) {
+  pendingHref = href || null;
+  try {
+    var raw = atob(base64Data);
+    var len = raw.length;
+    var bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
+
+    book = ePub(bytes.buffer);
+    rendition = book.renderTo("viewer", {
+      width: "100%",
+      height: "100%",
+      flow: "paginated",
+      spread: "none",
+      allowScriptedContent: false
+    });
+
+    rendition.themes.fontSize(currentFontSize + "px");
+    rendition.themes.default({
+      "body": { "line-height": "1.6 !important" },
+      "img, figure, video": { "max-width": "100% !important", "height": "auto !important" }
+    });
+
+    rendition.on("relocated", function (location) {
+      try {
+        notify("onRelocated", location.start.cfi || "");
+      } catch (e) {}
+    });
+
+    book.ready.then(function () {
+      document.getElementById("loading").style.display = "none";
+      var target = pendingHref;
+      if (target) {
+        rendition.display(target);
+      } else {
+        rendition.display();
+      }
+      notify("onReady", "");
+    }).catch(function (e) {
+      notify("onError", "ready: " + (e && e.message || e));
+    });
+  } catch (e) {
+    notify("onError", "loadBook: " + (e && e.message || e));
+    document.getElementById("loading").textContent = "Error: " + (e && e.message || e);
+  }
+}
+
+function goNext() {
+  if (rendition) rendition.next();
+}
+function goPrev() {
+  if (rendition) rendition.prev();
+}
+function goToHref(href) {
+  pendingHref = href;
+  if (rendition) rendition.display(href);
+}
+function setFontSize(px) {
+  currentFontSize = Math.max(10, Math.min(40, px | 0));
+  if (rendition) rendition.themes.fontSize(currentFontSize + "px");
+}
+
+// Make functions reachable from Kotlin via webView.evaluateJavascript.
+window.loadBook = loadBook;
+window.goNext = goNext;
+window.goPrev = goPrev;
+window.goToHref = goToHref;
+window.setFontSize = setFontSize;
+</script>
+</body>
+</html>

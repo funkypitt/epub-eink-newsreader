@@ -61,41 +61,9 @@ class MagazinePaginationTest {
         assertEquals(140, defaultTextZoomForScreenWidth(840)) // tablet / e-ink 7"+
     }
 
-    @Test
-    fun `prepareChapterHtml inserts override style at end of head`() {
-        val html = """<html><head><link rel="stylesheet" href="style.css"/></head><body><p>x</p></body></html>"""
-        val out = prepareChapterHtml(html)
-        // Override style sits *after* the producer's link so it wins specificity ties.
-        val styleIdx = out.indexOf("padding: 0 16px")
-        val linkIdx = out.indexOf("style.css")
-        val headCloseIdx = out.indexOf("</head>")
-        assert(linkIdx in 0 until styleIdx) { "override must come after producer style.css" }
-        assert(styleIdx in 0 until headCloseIdx) { "override must be inside <head>" }
-    }
-
-    @Test
-    fun `prepareChapterHtml prepends head when missing`() {
-        val html = "<body><p>headless</p></body>"
-        val out = prepareChapterHtml(html)
-        assert(out.startsWith("<head>")) { "should fall back to prepending <head>" }
-        assert("padding: 0 16px" in out)
-    }
-
-    @Test
-    fun `prepareChapterHtml repairs Economist's broken drop-cap markup`() {
-        // Real fragment from chapter-04.xhtml of the Economist fixture: the
-        // outer drop-cap span ends at a literal `<`, leaking <b>L</b> as
-        // plain text. Browsers render the `<` as a huge first letter and
-        // `b>L</b>` as visible text next to it.
-        val broken = """<p class="first"><span class="drop-cap"><</span>b>L</b>argely because Donald Trump</p>"""
-        val out = prepareChapterHtml(broken)
-        assert("""<span class="drop-cap">L</span>""" in out) {
-            "expected repaired drop-cap; got: $out"
-        }
-        assert("""<span class="drop-cap"><""" !in out) {
-            "broken pattern still present after repair"
-        }
-        // The plain-text 'b>' leak is gone.
-        assert("b>L</b>" !in out) { "leftover <b> tag-as-text not stripped" }
-    }
+    // Chapter HTML preparation is gone — epub.js now renders chapters via
+    // its `flow: paginated` mode, sidestepping the entire WebView-scroll
+    // problem the previous prepareChapterHtml was trying to work around.
+    // See assets/epubjs/reader.html and EpubJsArticleView in
+    // MagazineArticleContent.kt.
 }
