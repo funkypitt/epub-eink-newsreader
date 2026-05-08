@@ -1,0 +1,32 @@
+[en]
+ePub reader tuned for daily newspaper / magazine issues.
+
+Fork of Book's Story (ua.acclorite.book_story) with an opinionated magazine-mode parser and table of contents for ePub issues produced by an in-house newsletter generator. Calibrated against NZZ, 24 heures, Courrier International, and The Economist fixtures.
+
+The reader detects magazine ePubs at open time, paginates the TOC with one card per article (category, title, optional cover image), and routes article taps to a per-article WebView. A permanent three-zone navigation header (prev / home / next) sits on top of the existing tap-zone gesture system on every magazine screen.
+
+Debug-signed; sideload only. The .debug application id suffix lets it coexist with upstream Book's Story on the same device.
+
+- Magazine ePub auto-detection at open time
+- Paginated TOC with one card per article
+- Per-article WebView rendering of in-zip XHTML
+- Permanent prev / home / next header on magazine screens
+- All upstream Book's Story features (Material 3 reader, library)
+- Coexists with upstream Book's Story (.debug suffix)
+
+---
+[fr]
+Lecteur ePub adapté aux numéros quotidiens de presse / magazine.
+
+Fork de Book's Story (ua.acclorite.book_story) avec un parser et une table des matières dédiés au mode magazine, pour les ePub produits par un générateur de newsletter maison. Calibré sur des numéros de la NZZ, de 24 heures, du Courrier International et de The Economist.
+
+Le lecteur détecte les ePub magazine à l'ouverture, pagine la table des matières avec une carte par article (catégorie, titre, image de couverture éventuelle), et redirige les taps d'article vers une WebView par article. Un en-tête permanent de navigation à trois zones (prev / home / next) se superpose au système de zones tactiles existant sur tous les écrans magazine.
+
+Signé en debug ; sideload uniquement. Le suffixe d'applicationId .debug permet la cohabitation avec la version upstream de Book's Story sur le même appareil.
+
+- Détection automatique des ePub magazine à l'ouverture
+- Table des matières paginée, une carte par article
+- Rendu de chaque article via WebView sur le XHTML embarqué
+- En-tête permanent prev / home / next sur les écrans magazine
+- Toutes les fonctions upstream de Book's Story (lecteur Material 3, bibliothèque)
+- Cohabite avec Book's Story upstream (suffixe .debug)

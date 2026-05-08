@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magazine Reader (debug)</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1.25rem;
+    line-height: 1.55;
+    color: #222;
+  }
+  h1, h2 { line-height: 1.25; }
+  h1 { margin-bottom: 0.25rem; }
+  h2 { margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: 0.25rem; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  pre { background: #f6f6f6; padding: 0.75rem 1rem; overflow-x: auto; border-radius: 4px; }
+  ul { padding-left: 1.25rem; }
+  a { color: #2a5db0; }
+</style>
+</head>
+<body>
+
+<h1>Magazine Reader (debug)</h1>
+<p><em>Magazine-mode ePub reader, fork of Book's Story.</em></p>
+
+<h2>Overview</h2>
+<p>
+  Fork of <a href="https://github.com/Acclorite/book-story">Book's Story</a>
+  (<code>ua.acclorite.book_story</code>) with an opinionated magazine-mode parser and TOC for
+  ePub issues produced by an in-house newsletter generator (calibrated against NZZ,
+  24 heures, Courrier International, and The Economist fixtures).
+</p>
+<p>
+  The fork detects magazine ePubs at open time, paginates the table of contents with one card
+  per article (category, title, optional cover image), and routes article taps to a per-article
+  view rendered by an in-zip WebView. A permanent three-zone navigation header
+  (prev / home / next) sits on top of the existing tap-zone gesture system on every magazine
+  screen.
+</p>
+<p>
+  Debug-signed, sideload-only. The <code>.debug</code> application id suffix lets it coexist
+  with the upstream Book's Story release on the same device. See
+  <a href="MAGAZINE-READER-phases-1-2.md"><code>MAGAZINE-READER-phases-1-2.md</code></a> for
+  the parser and TOC spec.
+</p>
+
+<h2>Features</h2>
+<ul>
+  <li>All upstream Book's Story features (Material 3 reading, Jetpack Compose UI, library, customisation)</li>
+  <li>Magazine-mode parser detecting in-house newsletter ePubs at open time</li>
+  <li>Paginated TOC with one card per article (category, title, optional cover image)</li>
+  <li>Per-article WebView rendering of the in-zip XHTML</li>
+  <li>Permanent three-zone navigation header (prev / home / next) on magazine screens</li>
+  <li>Debug-signed; coexists with upstream Book's Story (<code>.debug</code> applicationId suffix)</li>
+</ul>
+
+<h2>Screenshots</h2>
+<p>See <code>fastlane/metadata/android/en-US/images/</code> for upstream Book's Story store
+assets.</p>
+
+<h2>Build &amp; install</h2>
+<p>Standard Android Gradle (Kotlin DSL) project; min SDK 26, target SDK 36.</p>
+<pre>./gradlew :app:assembleDebug
+# APK at app/build/outputs/apk/debug/
+</pre>
+<p>The <code>release-debug</code> variant builds the release pipeline (R8 / minification) but
+signs with the debug key, useful for local sanity-checking.</p>
+
+<h2>License</h2>
+<p>GNU General Public License v3.0-only. See the <code>LICENSE</code> file. Original
+copyright © Acclorite (Book's Story); magazine-mode additions follow the same licence.</p>
+
+</body>
+</html>
