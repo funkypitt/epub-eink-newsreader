@@ -78,6 +78,47 @@ function notify(name, payload) {
   } catch (_) {}
 }
 
+function dumpRenderingState() {
+  try {
+    var viewer = document.getElementById("viewer");
+    var iframes = document.querySelectorAll("#viewer iframe");
+    trace("viewer-rect",
+      "w=" + (viewer ? viewer.offsetWidth : "?") +
+      " h=" + (viewer ? viewer.offsetHeight : "?"));
+    trace("iframe-count", iframes.length);
+    if (iframes.length > 0) {
+      var f = iframes[0];
+      var st = getComputedStyle(f);
+      trace("iframe-rect",
+        "w=" + f.offsetWidth + " h=" + f.offsetHeight +
+        " left=" + f.offsetLeft + " top=" + f.offsetTop +
+        " visibility=" + st.visibility +
+        " transform=" + (st.transform || "(none)"));
+      try {
+        var idoc = f.contentDocument || (f.contentWindow && f.contentWindow.document);
+        if (idoc && idoc.body) {
+          var body = idoc.body;
+          var bs = idoc.defaultView.getComputedStyle(body);
+          trace("iframe-body",
+            "scrollW=" + body.scrollWidth + " scrollH=" + body.scrollHeight +
+            " offsetW=" + body.offsetWidth + " offsetH=" + body.offsetHeight +
+            " columnWidth=" + bs.columnWidth +
+            " columnCount=" + bs.columnCount);
+          var text = (body.innerText || "").trim();
+          trace("iframe-text-len", text.length);
+          trace("iframe-text-head", text.substring(0, 60));
+        } else {
+          trace("iframe-no-body", "contentDocument=" + (!!idoc));
+        }
+      } catch (e) {
+        trace("iframe-inspect-threw", e && (e.message || e));
+      }
+    }
+  } catch (e) {
+    trace("dumpRenderingState-threw", e && (e.message || e));
+  }
+}
+
 function loadBook(base64Data, href) {
   pendingHref = href || null;
   trace("loadBook.entered", "href=" + (href || "(none)") +
@@ -145,6 +186,10 @@ function loadBook(base64Data, href) {
       }
     }).then(function (result) {
       if (pendingHref) trace("navigated-to-href", pendingHref);
+      // Give the iframe one paint frame, then dump its actual layout —
+      // tells us whether it's zero-sized, off-screen, or has empty body.
+      setTimeout(dumpRenderingState, 250);
+      setTimeout(dumpRenderingState, 1500);
     }).catch(function (e) {
       trace("book.ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
