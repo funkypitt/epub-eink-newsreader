@@ -8,6 +8,7 @@ package ua.acclorite.book_story.ui.magazine
 
 import android.annotation.SuppressLint
 import android.webkit.WebView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import ua.acclorite.book_story.data.parser.magazine.MagazineWebViewClient
@@ -42,6 +46,19 @@ import java.io.File
 private const val ZOOM_MIN = 70
 private const val ZOOM_MAX = 220
 private const val ZOOM_STEP = 10
+
+/**
+ * Height of the opaque white band drawn over the WebView's bottom edge.
+ * Hides the half-cut line that would otherwise sit there because we
+ * vertical-scroll an arbitrarily-tall document inside a viewport-sized
+ * WebView. Combined with a matching reduction in the page-turn step, the
+ * masked line reappears in full as the first line of the next page —
+ * cheap analogue to Pluralis' TextPainter pre-pagination.
+ *
+ * 36dp comfortably covers one line at our default text zooms (100–140%
+ * with body line-height ≈ 1.6 × 16-20px ≈ 26-32px).
+ */
+private val EDGE_FADE: Dp = 36.dp
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -91,8 +108,6 @@ fun MagazineArticleContent(
             }
         }
 
-        Spacer(Modifier.height(8.dp))
-
         MagazineFooterBar(
             onDecrease = { textZoom = (textZoom - ZOOM_STEP).coerceAtLeast(ZOOM_MIN) },
             onAppHome = onAppHome,
@@ -114,6 +129,8 @@ private fun ChapterWebView(
 ) {
     var client by remember { mutableStateOf<MagazineWebViewClient?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+    val density = LocalDensity.current
+    val edgeFadePx = remember(density) { with(density) { EDGE_FADE.toPx() }.toInt() }
 
     DisposableEffect(epubPath, opfDir) {
         val c = MagazineWebViewClient(File(epubPath), opfDir)
@@ -173,7 +190,9 @@ private fun ChapterWebView(
         )
 
         // Tap zones: left third = page back, right third = page forward.
-        // Vertical scrollBy of one viewport — instant, no animation.
+        // Each step advances by (viewport - EDGE_FADE) so the line that's
+        // half-cut at the bottom of page N reappears in full as the first
+        // line of page N+1. The white band below masks that cut line.
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -184,7 +203,8 @@ private fun ChapterWebView(
                         indication = null,
                     ) {
                         webView?.let { wv ->
-                            val newY = (wv.scrollY - wv.height).coerceAtLeast(0)
+                            val step = (wv.height - edgeFadePx).coerceAtLeast(wv.height / 2)
+                            val newY = (wv.scrollY - step).coerceAtLeast(0)
                             wv.scrollTo(0, newY)
                         }
                     }
@@ -200,12 +220,27 @@ private fun ChapterWebView(
                     ) {
                         webView?.let { wv ->
                             if (wv.canScrollVertically(1)) {
-                                wv.scrollTo(0, wv.scrollY + wv.height)
+                                val step = (wv.height - edgeFadePx).coerceAtLeast(wv.height / 2)
+                                wv.scrollTo(0, wv.scrollY + step)
                             }
                         }
                     }
             )
         }
+
+        // Opaque white band over the WebView's bottom edge — hides the
+        // partial line that the viewport-sized scroll inevitably cuts.
+        // Drawn after the tap zones so it's visually on top, but the
+        // tap zones are functionally below the band's height anyway
+        // (they cover the full Box; clicks at the band's pixels just
+        // page-turn, which is correct).
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .height(EDGE_FADE)
+                .background(Color.White)
+        )
     }
 }
 
@@ -259,10 +294,7 @@ internal fun prepareChapterHtml(html: String): String {
     val style = """
         <style>
           html, body { margin: 0 !important; }
-          /* Generous top/bottom padding so text descenders never butt up
-             against the article band's edges (and through them, the
-             header / footer chrome). */
-          body { padding: 24px 16px !important; box-sizing: border-box !important; }
+          body { padding: 14px 16px !important; box-sizing: border-box !important; }
           img, figure, video { max-width: 100% !important; height: auto !important; }
           .hero-img img, .img-container img { width: 100% !important; }
         </style>
