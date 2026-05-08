@@ -65,6 +65,8 @@ fun MagazineTocContent(
 ) {
     val context = LocalContext.current
 
+    KeepScreenOnEffect()
+
     androidx.compose.foundation.layout.Column(
         modifier = Modifier.fillMaxSize().safeDrawingPadding()
     ) {

@@ -57,6 +57,8 @@ fun MagazineArticleContent(
     }
     var textZoom by remember(initialZoom) { mutableIntStateOf(initialZoom) }
 
+    KeepScreenOnEffect()
+
     Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
         MagazineHeaderBar(
             onPrev = onPrev,
