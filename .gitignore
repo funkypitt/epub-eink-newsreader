@@ -14,3 +14,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Local debug artifacts — screenshots / screen recordings
+photo_*.jpg
+video_*.mp4
+latest.mp4
+
