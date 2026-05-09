@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Toc
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -68,8 +68,8 @@ fun MagazineHeaderBar(
         )
         VerticalDivider()
         HeaderZone(
-            icon = Icons.Filled.Home,
-            contentDescription = "Home",
+            icon = Icons.AutoMirrored.Filled.Toc,
+            contentDescription = "Table of contents",
             enabled = homeEnabled,
             onClick = onHome,
             modifier = Modifier.weight(1f),
