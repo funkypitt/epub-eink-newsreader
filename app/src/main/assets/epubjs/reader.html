@@ -39,22 +39,14 @@
 // epub.js's `flow: paginated` mode, exposes goNext / goPrev / setFontSize
 // for the Compose tap-zone overlay to call.
 
-// ----- Debug instrumentation ------------------------------------------
-// Every checkpoint logs through console.log (Android's WebChromeClient
-// forwards these to the MagazineJS logcat tag) and through
-// window.MagazineReader.onTrace (the Compose status overlay shows the
-// most recent message in plain sight).
+// Silent trace — every checkpoint goes to console.log (forwarded to
+// Android logcat under "MagazineJS"). No DOM rewrites of the loading
+// indicator; the user sees "Loading…" until epub.js hides it. Useful
+// signal stays available via `adb logcat -s MagazineJS` if anything
+// regresses.
 function trace(stage, detail) {
-  var msg = "[mr] " + stage + (detail !== undefined ? ": " + detail : "");
-  try { console.log(msg); } catch (_) {}
   try {
-    if (window.MagazineReader && window.MagazineReader.onTrace) {
-      window.MagazineReader.onTrace(msg);
-    }
-  } catch (_) {}
-  try {
-    var el = document.getElementById("loading");
-    if (el && el.style.display !== "none") el.textContent = msg;
+    console.log("[mr] " + stage + (detail !== undefined ? ": " + detail : ""));
   } catch (_) {}
 }
 
@@ -229,10 +221,6 @@ function loadBook(base64Data, href) {
       }
     }).then(function (result) {
       if (pendingHref) trace("navigated-to-href", pendingHref);
-      // Give the iframe one paint frame, then dump its actual layout —
-      // tells us whether it's zero-sized, off-screen, or has empty body.
-      setTimeout(dumpRenderingState, 250);
-      setTimeout(dumpRenderingState, 1500);
     }).catch(function (e) {
       trace("book.ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));

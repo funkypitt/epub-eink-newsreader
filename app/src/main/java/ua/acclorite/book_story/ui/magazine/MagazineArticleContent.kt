@@ -145,7 +145,6 @@ private fun EpubJsArticleView(
     var webView by remember { mutableStateOf<WebView?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
     var bookLoaded by remember(epubPath) { mutableStateOf(false) }
-    var debugStatus by remember { mutableStateOf<String?>(null) }
 
     val epubBase64 = remember(epubPath) {
         runCatching {
@@ -191,9 +190,9 @@ private fun EpubJsArticleView(
                             pageLoaded = true
                         }
                     }
-                    // Forward every console.log / .warn / .error from the
-                    // WebView into Android's logcat under the "MagazineJS"
-                    // tag, plus surface the most recent line on screen.
+                    // Forward JS console output into Android logcat under
+                    // the "MagazineJS" tag — silent in normal use, useful
+                    // if anything regresses (`adb logcat -s MagazineJS`).
                     webChromeClient = object : WebChromeClient() {
                         override fun onConsoleMessage(message: ConsoleMessage): Boolean {
                             val level = when (message.messageLevel()) {
@@ -206,16 +205,11 @@ private fun EpubJsArticleView(
                                 "MagazineJS",
                                 "${message.message()} (${message.sourceId()}:${message.lineNumber()})",
                             )
-                            debugStatus = message.message()
                             return true
                         }
                     }
                     addJavascriptInterface(
-                        MagazineReaderBridge(
-                            readyCallback = { debugStatus = null },
-                            errorCallback = { debugStatus = "[error] $it" },
-                            traceCallback = { debugStatus = it },
-                        ),
+                        MagazineReaderBridge(),
                         "MagazineReader",
                     )
                     loadUrl("file:///android_asset/epubjs/reader.html")
@@ -238,26 +232,6 @@ private fun EpubJsArticleView(
                 }
             },
         )
-
-        // Debug status overlay — shows the most recent reader.html trace
-        // (or the most recent JS console message) so a hang is visible
-        // without logcat. Auto-clears once the article successfully
-        // displays (onReady fires).
-        debugStatus?.let { status ->
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color(0xCC000000))
-                    .padding(8.dp)
-            ) {
-                Text(
-                    text = status,
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-        }
 
         // Three tap-zone thirds: left = prev page, centre = toggle chrome,
         // right = next page. Always above the WebView in z-order.
@@ -294,32 +268,14 @@ private fun EpubJsArticleView(
     }
 }
 
-/** Bridge for callbacks from reader.html into Kotlin. */
-private class MagazineReaderBridge(
-    private val readyCallback: () -> Unit,
-    private val errorCallback: (String) -> Unit,
-    private val traceCallback: (String) -> Unit,
-) {
-    @JavascriptInterface
-    fun onReady(payload: String) {
-        readyCallback()
-    }
-
-    @JavascriptInterface
-    fun onRelocated(cfi: String) {
-        // Position tracking placeholder — could persist last-page-cfi here.
-    }
-
-    @JavascriptInterface
-    fun onError(message: String) {
-        errorCallback(message)
-    }
-
-    /** Stage trace from reader.html — consumed by the on-screen debug overlay. */
-    @JavascriptInterface
-    fun onTrace(message: String) {
-        traceCallback(message)
-    }
+/** Bridge for callbacks from reader.html into Kotlin. All call sites
+ *  exist so the JS side can fire them unconditionally; the Kotlin side
+ *  intentionally treats them as no-ops in normal use. */
+private class MagazineReaderBridge {
+    @JavascriptInterface fun onReady(payload: String) {}
+    @JavascriptInterface fun onRelocated(cfi: String) {}
+    @JavascriptInterface fun onError(message: String) {}
+    @JavascriptInterface fun onTrace(message: String) {}
 }
 
 /** Properly JSON-escape a string for embedding in an evaluateJavascript call. */
