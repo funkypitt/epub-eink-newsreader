@@ -39,11 +39,16 @@ class OpenBookModel @Inject constructor(
     )
     val target = _target.asSharedFlow()
 
-    private var decided = false
+    // Track which bookId we last decided for. The activity-scoped VM
+    // outlives a single OpenBookScreen, so a plain boolean flag would
+    // make every subsequent magazine open re-emit the *previous*
+    // result through the replay-1 SharedFlow — landing the user in
+    // whichever issue they opened first.
+    private var lastDecidedBookId: Int? = null
 
     fun decide(bookId: Int) {
-        if (decided) return
-        decided = true
+        if (lastDecidedBookId == bookId) return
+        lastDecidedBookId = bookId
         viewModelScope.launch {
             val book = getBook(bookId)
             val isMagazine = book?.let {

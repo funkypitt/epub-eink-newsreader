@@ -153,9 +153,12 @@ function loadBook(base64Data, href) {
         return Promise.resolve(result).then(function (text) {
           if (typeof text !== "string") return text;
           // Drop-cap collapse: <span class="drop-cap"><</span>b>L</b>
-          // → <span class="drop-cap">L</span>
+          // → <span class="drop-cap">L</span>.
+          // Note the regex needs TWO `<` between the drop-cap span and
+          // </span>: the first is the broken literal `<` the producer
+          // emits, the second is the `<` of the `</span>` closing tag.
           text = text.replace(
-            /<span class="drop-cap"><\/span>b>([A-Za-z])<\/b>/g,
+            /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
             "<span class=\"drop-cap\">$1</span>"
           );
           // Self-close void elements XHTML requires closed.
