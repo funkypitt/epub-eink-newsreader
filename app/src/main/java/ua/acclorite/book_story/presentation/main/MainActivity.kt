@@ -12,6 +12,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.database.CursorWindow
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -98,6 +99,11 @@ class MainActivity : AppCompatActivity() {
         // Edge to edge
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Keep the display awake for the entire app lifetime while foregrounded.
+        // Reading on e-ink devices makes Android's default screen timeout
+        // hostile — applied at the activity window so every screen inherits.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         // If launched via Android's "Open with" sheet (Telegram, Files, etc.)
         // capture the URI now so the navigator can route to OpenIntentScreen

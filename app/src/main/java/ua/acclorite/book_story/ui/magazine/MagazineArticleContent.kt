@@ -68,8 +68,6 @@ fun MagazineArticleContent(
         mutableStateOf(false)
     }
 
-    KeepScreenOnEffect()
-
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
             when {
