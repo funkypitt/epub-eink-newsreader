@@ -68,6 +68,15 @@ var book = null;
 var rendition = null;
 var pendingHref = null;
 var currentFontSize = 18;
+// Guard against overlapping rendition.next/prev calls. Without this, rapid
+// taps queue inside epub.js and a single rejected promise can wedge the
+// queue so subsequent taps do nothing. Reset in the relocated handler
+// and also in the .then/.catch of each navigation call.
+var isNavigating = false;
+// Last location reported by rendition.on("relocated"). Used to detect
+// "next() was a no-op" — e.g. when epub.js thinks we've reached end of
+// spine even though the article has unrendered tail columns.
+var lastLocation = null;
 
 function notify(name, payload) {
   try {
@@ -180,17 +189,32 @@ function loadBook(base64Data, href) {
       height: "100%",
       flow: "paginated",
       spread: "none",
-      allowScriptedContent: false
+      allowScriptedContent: true
     });
     trace("rendition-created");
 
     rendition.themes.fontSize(currentFontSize + "px");
     rendition.themes.default({
+      // Clearing the drop-cap float at the end of every paragraph keeps
+      // it from leaking into the next paragraph's column when epub.js
+      // splits the body into multi-column pages — without this, the tail
+      // of long articles can render in columns epub.js never paginates to.
       "body": { "line-height": "1.6 !important" },
+      "p::after": { "content": "''", "display": "block", "clear": "both" },
       "img, figure, video": { "max-width": "100% !important", "height": "auto !important" }
     });
 
     rendition.on("relocated", function (location) {
+      lastLocation = location;
+      isNavigating = false;
+      try {
+        var disp = (location && location.start && location.start.displayed) || {};
+        trace("relocated",
+          "page=" + (disp.page || "?") +
+          " total=" + (disp.total || "?") +
+          " atEnd=" + (location && location.atEnd) +
+          " atStart=" + (location && location.atStart));
+      } catch (_) {}
       try { notify("onRelocated", location.start.cfi || ""); } catch (_) {}
     });
 
@@ -224,6 +248,17 @@ function loadBook(base64Data, href) {
       }
     }).then(function (result) {
       if (pendingHref) trace("navigated-to-href", pendingHref);
+      // Pre-compute the book's location index. funky-openlib does this and
+      // it forces epub.js to walk every section, which has the side effect
+      // of fixing miscounted column totals on long articles where rendition
+      // would otherwise stop advancing 1-2 pages short of the end.
+      if (book.locations && book.locations.generate) {
+        return book.locations.generate(1600).then(function () {
+          trace("locations.generated", "count=" + (book.locations.length() || 0));
+        }).catch(function (e) {
+          trace("locations.generate-rejected", e && (e.message || e));
+        });
+      }
     }).catch(function (e) {
       trace("book.ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
@@ -234,8 +269,50 @@ function loadBook(base64Data, href) {
   }
 }
 
-function goNext() { if (rendition) rendition.next(); }
-function goPrev() { if (rendition) rendition.prev(); }
+function goNext() {
+  if (!rendition || isNavigating) return;
+  isNavigating = true;
+  trace("goNext.invoked",
+    "atEnd=" + (lastLocation && lastLocation.atEnd) +
+    " page=" + (lastLocation && lastLocation.start && lastLocation.start.displayed && lastLocation.start.displayed.page));
+  try {
+    var p = rendition.next();
+    if (p && p.then) {
+      p.then(function () { isNavigating = false; })
+       .catch(function (e) {
+         isNavigating = false;
+         trace("rendition.next-rejected", e && (e.message || e));
+       });
+    } else {
+      isNavigating = false;
+    }
+  } catch (e) {
+    isNavigating = false;
+    trace("goNext-threw", e && (e.message || e));
+  }
+}
+function goPrev() {
+  if (!rendition || isNavigating) return;
+  isNavigating = true;
+  trace("goPrev.invoked",
+    "atStart=" + (lastLocation && lastLocation.atStart) +
+    " page=" + (lastLocation && lastLocation.start && lastLocation.start.displayed && lastLocation.start.displayed.page));
+  try {
+    var p = rendition.prev();
+    if (p && p.then) {
+      p.then(function () { isNavigating = false; })
+       .catch(function (e) {
+         isNavigating = false;
+         trace("rendition.prev-rejected", e && (e.message || e));
+       });
+    } else {
+      isNavigating = false;
+    }
+  } catch (e) {
+    isNavigating = false;
+    trace("goPrev-threw", e && (e.message || e));
+  }
+}
 function goToHref(href) {
   pendingHref = href;
   if (rendition) rendition.display(href);
