@@ -41,7 +41,7 @@ data class MagazineArticleScreen(
             state = state,
             onPrev = { model.goToOffset(-1) },
             onTocHome = { navigator.pop() },
-            onAppHome = { navigator.popToRoot() },
+            onAppHome = { navigator.goToLibrary() },
             onNext = { model.goToOffset(+1) },
         )
     }

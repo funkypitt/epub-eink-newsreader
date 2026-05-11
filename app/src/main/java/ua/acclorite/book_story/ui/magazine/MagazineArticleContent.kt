@@ -143,6 +143,12 @@ private fun EpubJsArticleView(
     var webView by remember { mutableStateOf<WebView?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
     var bookLoaded by remember(epubPath) { mutableStateOf(false) }
+    // Track what we've already pushed to the WebView so the AndroidView.update
+    // lambda — which runs on every recomposition — doesn't keep firing
+    // goToHref() and resetting the reader to the first page of the article
+    // whenever the user toggles chrome or bumps the zoom.
+    var lastNavigatedHref by remember(epubPath) { mutableStateOf<String?>(null) }
+    var lastFontPx by remember(epubPath) { mutableIntStateOf(-1) }
 
     val epubBase64 = remember(epubPath) {
         runCatching {
@@ -219,14 +225,21 @@ private fun EpubJsArticleView(
                     val js = "loadBook(${quoteJs(epubBase64)}, ${quoteJs(chapterHref)});"
                     wv.evaluateJavascript(js, null)
                     bookLoaded = true
-                } else if (pageLoaded && bookLoaded) {
+                    lastNavigatedHref = chapterHref
+                } else if (
+                    pageLoaded && bookLoaded && chapterHref != lastNavigatedHref
+                ) {
                     // Article changed within the same loaded ePub.
                     wv.evaluateJavascript("goToHref(${quoteJs(chapterHref)});", null)
+                    lastNavigatedHref = chapterHref
                 }
                 if (pageLoaded) {
                     // Map textZoomPercent (~70-220%) onto a font-size in px.
                     val fontPx = (12 + (textZoomPercent - 70) * 16 / 150).coerceIn(10, 40)
-                    wv.evaluateJavascript("setFontSize($fontPx);", null)
+                    if (fontPx != lastFontPx) {
+                        wv.evaluateJavascript("setFontSize($fontPx);", null)
+                        lastFontPx = fontPx
+                    }
                 }
             },
         )

@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.parcelize.Parcelize
+import ua.acclorite.book_story.presentation.library.LibraryScreen
 import ua.acclorite.book_story.presentation.navigator.Navigator
 import ua.acclorite.book_story.presentation.navigator.Screen
 import ua.acclorite.book_story.ui.magazine.MagazineTocContent
@@ -58,11 +59,20 @@ data class MagazineTocScreen(
                 )
             },
             onHome = { navigator.pop() },
-            onAppHome = { navigator.popToRoot() },
+            onAppHome = { navigator.goToLibrary() },
         )
     }
 }
 
-internal fun Navigator.popToRoot() {
+/**
+ * Navigate to the library root. When launched via Android's "Open with" sheet,
+ * OpenIntentScreen replaces itself with the TOC and never puts LibraryScreen
+ * on the stack — so popping is a no-op. Pop down to a single entry and, if
+ * that entry isn't the library, replace it.
+ */
+internal fun Navigator.goToLibrary() {
     while (items.value.size > 1) pop()
+    if (lastItem.value !== LibraryScreen) {
+        push(LibraryScreen, saveInBackStack = false)
+    }
 }
