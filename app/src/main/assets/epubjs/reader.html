@@ -7,24 +7,18 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100vh; overflow: hidden; background: #ffffff; color: #000000; }
   /* position: fixed + inset:0 gives #viewer dimensions relative to the
-     WebView's visual viewport directly. Crucially DO NOT set explicit
-     width/height in vh/vw — Android WebView resolves both 100vh and
-     100vw to 0 in this configuration, and an explicit height:0 wins
-     over the position-anchor stretch. Letting the four anchors pin
-     the box gives the right dimensions. */
+     WebView's visual viewport directly. Android WebView resolves 100vh
+     and 100vw to 0 in this configuration, so the four anchors are what
+     stretch #viewer to the visible area. */
   #viewer {
     position: fixed; inset: 0;
     overflow: hidden;
   }
   #loading {
-    /* position: fixed against the visual viewport. body height collapses
-       to 0 in this setup so position:absolute would centre against 0. */
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     font-family: monospace; font-size: 12px; color: #888;
     z-index: 5;
-    white-space: pre;
-    text-align: center;
   }
 </style>
 <script src="jszip.min.js"></script>
@@ -34,25 +28,26 @@
 <div id="viewer"></div>
 <div id="loading">Loading…</div>
 <script>
-// epub.js host page for the Magazine Reader. Receives the ePub bytes and
-// the chapter href from the Android side, displays the chapter in
-// epub.js's `flow: paginated` mode, exposes goNext / goPrev / setFontSize
-// for the Compose tap-zone overlay to call.
+// epub.js host page for the Magazine Reader. Receives ePub bytes and the
+// chapter href from Android, renders the chapter in scrolled-doc mode,
+// exposes goNext / goPrev / goToHref / setFontSize for the Compose
+// tap-zone overlay.
+//
+// Why scrolled-doc and not paginated: Android WebView's CSS multi-column
+// implementation clips body content past N columns when body has
+// overflow-y:hidden + column-fill:auto, which left the last ~30% of
+// long articles unreachable. Scrolled-doc renders the full chapter as
+// one tall iframe inside an epub.js-managed scrollable div; goNext/Prev
+// scroll that div by one viewport height.
 
-// Silent trace — every checkpoint goes to console.log (forwarded to
-// Android logcat under "MagazineJS"). No DOM rewrites of the loading
-// indicator; the user sees "Loading…" until epub.js hides it. Useful
-// signal stays available via `adb logcat -s MagazineJS` if anything
-// regresses.
 function trace(stage, detail) {
   try {
     console.log("[mr] " + stage + (detail !== undefined ? ": " + detail : ""));
   } catch (_) {}
 }
 
-window.onerror = function (message, source, lineno, colno, error) {
-  trace("window.onerror",
-    (message || "") + " @ " + (source || "?") + ":" + (lineno || "?"));
+window.onerror = function (message, source, lineno) {
+  trace("window.onerror", (message || "") + " @ " + (source || "?") + ":" + (lineno || "?"));
   return false;
 };
 window.addEventListener("unhandledrejection", function (e) {
@@ -60,23 +55,12 @@ window.addEventListener("unhandledrejection", function (e) {
   trace("unhandledrejection", r && (r.message || r) || "(no reason)");
 });
 
-trace("html-loaded");
-trace("epubjs-present", typeof ePub);
-trace("jszip-present", typeof JSZip);
-
 var book = null;
 var rendition = null;
 var pendingHref = null;
 var currentFontSize = 18;
-// Guard against overlapping rendition.next/prev calls. Without this, rapid
-// taps queue inside epub.js and a single rejected promise can wedge the
-// queue so subsequent taps do nothing. Reset in the relocated handler
-// and also in the .then/.catch of each navigation call.
+// Guard against overlapping page-turn calls.
 var isNavigating = false;
-// Last location reported by rendition.on("relocated"). Used to detect
-// "next() was a no-op" — e.g. when epub.js thinks we've reached end of
-// spine even though the article has unrendered tail columns.
-var lastLocation = null;
 
 function notify(name, payload) {
   try {
@@ -84,47 +68,6 @@ function notify(name, payload) {
       window.MagazineReader[name](payload || "");
     }
   } catch (_) {}
-}
-
-function dumpRenderingState() {
-  try {
-    var viewer = document.getElementById("viewer");
-    var iframes = document.querySelectorAll("#viewer iframe");
-    trace("viewer-rect",
-      "w=" + (viewer ? viewer.offsetWidth : "?") +
-      " h=" + (viewer ? viewer.offsetHeight : "?"));
-    trace("iframe-count", iframes.length);
-    if (iframes.length > 0) {
-      var f = iframes[0];
-      var st = getComputedStyle(f);
-      trace("iframe-rect",
-        "w=" + f.offsetWidth + " h=" + f.offsetHeight +
-        " left=" + f.offsetLeft + " top=" + f.offsetTop +
-        " visibility=" + st.visibility +
-        " transform=" + (st.transform || "(none)"));
-      try {
-        var idoc = f.contentDocument || (f.contentWindow && f.contentWindow.document);
-        if (idoc && idoc.body) {
-          var body = idoc.body;
-          var bs = idoc.defaultView.getComputedStyle(body);
-          trace("iframe-body",
-            "scrollW=" + body.scrollWidth + " scrollH=" + body.scrollHeight +
-            " offsetW=" + body.offsetWidth + " offsetH=" + body.offsetHeight +
-            " columnWidth=" + bs.columnWidth +
-            " columnCount=" + bs.columnCount);
-          var text = (body.innerText || "").trim();
-          trace("iframe-text-len", text.length);
-          trace("iframe-text-head", text.substring(0, 60));
-        } else {
-          trace("iframe-no-body", "contentDocument=" + (!!idoc));
-        }
-      } catch (e) {
-        trace("iframe-inspect-threw", e && (e.message || e));
-      }
-    }
-  } catch (e) {
-    trace("dumpRenderingState-threw", e && (e.message || e));
-  }
 }
 
 function loadBook(base64Data, href) {
@@ -136,14 +79,11 @@ function loadBook(base64Data, href) {
       throw new Error("epub.js not loaded — typeof ePub=" + (typeof ePub));
     }
     var raw = atob(base64Data);
-    trace("base64-decoded", "rawBytes=" + raw.length);
     var len = raw.length;
     var bytes = new Uint8Array(len);
     for (var i = 0; i < len; i++) bytes[i] = raw.charCodeAt(i);
-    trace("uint8array-built");
 
     book = ePub(bytes.buffer);
-    trace("epub-created");
 
     // Repair producer-side HTML defects before each chapter is parsed
     // as XHTML (which fails on the Economist's malformed drop-caps and
@@ -156,16 +96,15 @@ function loadBook(base64Data, href) {
         // Pass-through for everything that isn't a chapter — same return
         // type the original returned (sync or Promise). Some epub.js
         // callers expect sync return; wrapping unconditionally with
-        // Promise.resolve breaks them (saw "charCodeAt of undefined"
-        // because a Promise was being treated as a Uint8Array).
+        // Promise.resolve breaks them.
         if (!/\.x?html?$/i.test(path || "")) return result;
         return Promise.resolve(result).then(function (text) {
           if (typeof text !== "string") return text;
           // Drop-cap collapse: <span class="drop-cap"><</span>b>L</b>
-          // → <span class="drop-cap">L</span>.
-          // Note the regex needs TWO `<` between the drop-cap span and
-          // </span>: the first is the broken literal `<` the producer
-          // emits, the second is the `<` of the `</span>` closing tag.
+          // → <span class="drop-cap">L</span>. The regex needs TWO `<`
+          // between the drop-cap span and </span>: the first is the
+          // broken literal `<` the producer emits, the second is the
+          // `<` of the </span> closing tag.
           text = text.replace(
             /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
             "<span class=\"drop-cap\">$1</span>"
@@ -181,86 +120,39 @@ function loadBook(base64Data, href) {
           return text;
         });
       };
-      trace("archive-patched");
     }
 
     rendition = book.renderTo("viewer", {
       width: "100%",
       height: "100%",
-      flow: "paginated",
-      spread: "none",
+      flow: "scrolled-doc",
       allowScriptedContent: true
     });
-    trace("rendition-created");
 
     rendition.themes.fontSize(currentFontSize + "px");
     rendition.themes.default({
-      // Clearing the drop-cap float at the end of every paragraph keeps
-      // it from leaking into the next paragraph's column when epub.js
-      // splits the body into multi-column pages — without this, the tail
-      // of long articles can render in columns epub.js never paginates to.
       "body": { "line-height": "1.6 !important" },
-      "p::after": { "content": "''", "display": "block", "clear": "both" },
       "img, figure, video": { "max-width": "100% !important", "height": "auto !important" }
     });
 
     rendition.on("relocated", function (location) {
-      lastLocation = location;
       isNavigating = false;
-      try {
-        var disp = (location && location.start && location.start.displayed) || {};
-        trace("relocated",
-          "page=" + (disp.page || "?") +
-          " total=" + (disp.total || "?") +
-          " atEnd=" + (location && location.atEnd) +
-          " atStart=" + (location && location.atStart));
-      } catch (_) {}
       try { notify("onRelocated", location.start.cfi || ""); } catch (_) {}
     });
 
     book.ready.then(function () {
-      trace("book.ready-resolved");
-      try {
-        trace("spine-count", book.spine && book.spine.length);
-        var first = book.spine && book.spine.get && book.spine.get(0);
-        if (first) {
-          trace("spine[0]",
-            "href=" + (first.href || "?") +
-            " idref=" + (first.idref || "?") +
-            " canonical=" + (first.canonical || "?"));
-        }
-      } catch (_) {}
-
       var hide = document.getElementById("loading");
       if (hide) hide.style.display = "none";
-
       // Always display the first chapter first — passing an href that
       // doesn't match epub.js's normalised spine entries makes
-      // rendition.display() hang silently. Once the first page is up
-      // we navigate to the requested href as a follow-up.
+      // rendition.display() hang silently. Then navigate to the
+      // requested href as a follow-up.
       return rendition.display();
     }).then(function () {
-      trace("rendition.display-resolved");
       notify("onReady", "");
-      if (pendingHref) {
-        trace("navigating-to-href", pendingHref);
-        return rendition.display(pendingHref);
-      }
-    }).then(function (result) {
-      if (pendingHref) trace("navigated-to-href", pendingHref);
-      // Pre-compute the book's location index. funky-openlib does this and
-      // it forces epub.js to walk every section, which has the side effect
-      // of fixing miscounted column totals on long articles where rendition
-      // would otherwise stop advancing 1-2 pages short of the end.
-      if (book.locations && book.locations.generate) {
-        return book.locations.generate(1600).then(function () {
-          trace("locations.generated", "count=" + (book.locations.length() || 0));
-        }).catch(function (e) {
-          trace("locations.generate-rejected", e && (e.message || e));
-        });
-      }
+      if (pendingHref) return rendition.display(pendingHref);
     }).catch(function (e) {
-      trace("book.ready/display-rejected", e && (e.message || e));
+      trace("ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
     });
   } catch (e) {
@@ -269,54 +161,59 @@ function loadBook(base64Data, href) {
   }
 }
 
+// In scrolled-doc mode epub.js sizes the iframe to the full chapter
+// height, so the iframe's own contentWindow has no overflow. The
+// scrollable element is the epub.js-managed wrapper (`div.epub-container`,
+// overflow:auto) that sits between #viewer and the iframe — walk up
+// from the iframe to find it.
+function findScrollContainer() {
+  var iframes = document.querySelectorAll("#viewer iframe");
+  if (!iframes.length) return null;
+  var el = iframes[iframes.length - 1].parentElement;
+  while (el && el !== document.body) {
+    if (el.scrollHeight > el.clientHeight + 1) return el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+// 24px overlap so the last line of a screen reappears as the first line
+// of the next, which keeps the reader from losing half a line at a flip.
+function pageStep(container) {
+  return Math.max(40, (container.clientHeight || 600) - 24);
+}
+
 function goNext() {
-  if (!rendition || isNavigating) return;
+  if (isNavigating) return;
   isNavigating = true;
-  trace("goNext.invoked",
-    "atEnd=" + (lastLocation && lastLocation.atEnd) +
-    " page=" + (lastLocation && lastLocation.start && lastLocation.start.displayed && lastLocation.start.displayed.page));
   try {
-    var p = rendition.next();
-    if (p && p.then) {
-      p.then(function () { isNavigating = false; })
-       .catch(function (e) {
-         isNavigating = false;
-         trace("rendition.next-rejected", e && (e.message || e));
-       });
-    } else {
-      isNavigating = false;
-    }
-  } catch (e) {
+    var c = findScrollContainer();
+    if (!c) return;
+    var target = Math.min(c.scrollHeight - c.clientHeight, c.scrollTop + pageStep(c));
+    if (target > c.scrollTop) c.scrollTop = target;
+  } finally {
     isNavigating = false;
-    trace("goNext-threw", e && (e.message || e));
   }
 }
+
 function goPrev() {
-  if (!rendition || isNavigating) return;
+  if (isNavigating) return;
   isNavigating = true;
-  trace("goPrev.invoked",
-    "atStart=" + (lastLocation && lastLocation.atStart) +
-    " page=" + (lastLocation && lastLocation.start && lastLocation.start.displayed && lastLocation.start.displayed.page));
   try {
-    var p = rendition.prev();
-    if (p && p.then) {
-      p.then(function () { isNavigating = false; })
-       .catch(function (e) {
-         isNavigating = false;
-         trace("rendition.prev-rejected", e && (e.message || e));
-       });
-    } else {
-      isNavigating = false;
-    }
-  } catch (e) {
+    var c = findScrollContainer();
+    if (!c) return;
+    var target = Math.max(0, c.scrollTop - pageStep(c));
+    if (target < c.scrollTop) c.scrollTop = target;
+  } finally {
     isNavigating = false;
-    trace("goPrev-threw", e && (e.message || e));
   }
 }
+
 function goToHref(href) {
   pendingHref = href;
   if (rendition) rendition.display(href);
 }
+
 function setFontSize(px) {
   currentFontSize = Math.max(10, Math.min(40, px | 0));
   if (rendition) rendition.themes.fontSize(currentFontSize + "px");
@@ -327,7 +224,6 @@ window.goNext = goNext;
 window.goPrev = goPrev;
 window.goToHref = goToHref;
 window.setFontSize = setFontSize;
-trace("api-exposed");
 </script>
 </body>
 </html>

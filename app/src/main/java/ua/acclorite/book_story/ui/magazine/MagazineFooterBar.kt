@@ -7,9 +7,11 @@
 package ua.acclorite.book_story.ui.magazine
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +21,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -69,7 +71,10 @@ fun MagazineFooterBar(
         )
         VerticalDivider()
         Box(
-            modifier = Modifier.weight(1f).fillMaxHeight(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clickable(onClick = onAppHome),
             contentAlignment = Alignment.Center,
         ) {
             if (centerLabel != null) {
@@ -77,9 +82,8 @@ fun MagazineFooterBar(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onAppHome) {
-                        Icon(Icons.Filled.Home, contentDescription = "App home")
-                    }
+                    Icon(Icons.Filled.Home, contentDescription = "App home")
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = centerLabel,
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
@@ -87,9 +91,7 @@ fun MagazineFooterBar(
                     )
                 }
             } else {
-                IconButton(onClick = onAppHome) {
-                    Icon(Icons.Filled.Home, contentDescription = "App home")
-                }
+                Icon(Icons.Filled.Home, contentDescription = "App home")
             }
         }
         VerticalDivider()
@@ -111,10 +113,15 @@ private fun FooterZone(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
-        IconButton(onClick = onClick, enabled = enabled) {
-            Icon(imageVector = icon, contentDescription = contentDescription)
-        }
+    val tint = if (enabled) LocalContentColor.current
+               else LocalContentColor.current.copy(alpha = 0.38f)
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(imageVector = icon, contentDescription = contentDescription, tint = tint)
     }
 }
 

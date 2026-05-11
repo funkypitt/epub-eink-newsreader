@@ -7,9 +7,11 @@
 package ua.acclorite.book_story.ui.magazine
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.Toc
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,16 +97,22 @@ private fun HeaderZone(
     modifier: Modifier = Modifier,
     label: String? = null,
 ) {
-    Box(modifier = modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+    val tint = if (enabled) LocalContentColor.current
+               else LocalContentColor.current.copy(alpha = 0.38f)
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
         if (label != null) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onClick, enabled = enabled) {
-                    Icon(imageVector = icon, contentDescription = contentDescription)
-                }
+                Icon(imageVector = icon, contentDescription = contentDescription, tint = tint)
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
@@ -114,9 +122,7 @@ private fun HeaderZone(
                 )
             }
         } else {
-            IconButton(onClick = onClick, enabled = enabled) {
-                Icon(imageVector = icon, contentDescription = contentDescription)
-            }
+            Icon(imageVector = icon, contentDescription = contentDescription, tint = tint)
         }
     }
 }
