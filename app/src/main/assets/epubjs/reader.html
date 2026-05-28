@@ -28,17 +28,19 @@
 <div id="viewer"></div>
 <div id="loading">Loading…</div>
 <script>
-// epub.js host page for the Magazine Reader. Receives ePub bytes and the
-// chapter href from Android, renders the chapter in scrolled-doc mode,
-// exposes goNext / goPrev / goToHref / setFontSize for the Compose
-// tap-zone overlay.
+// epub.js host page for the Magazine Reader.
 //
-// Why scrolled-doc and not paginated: Android WebView's CSS multi-column
-// implementation clips body content past N columns when body has
-// overflow-y:hidden + column-fill:auto, which left the last ~30% of
-// long articles unreachable. Scrolled-doc renders the full chapter as
-// one tall iframe inside an epub.js-managed scrollable div; goNext/Prev
-// scroll that div by one viewport height.
+// Pagination approach (inspired by Readium, BSD-3-Clause):
+// epub.js loads the chapter in scrolled-doc mode for reliable content
+// rendering — its native paginated mode clips content past N columns
+// on Android WebView. After the chapter is displayed we apply CSS
+// multi-column layout to the iframe body ourselves and navigate with
+// body.scrollLeft. Using overflow:auto (not hidden) forces the browser
+// to lay out every column even when they are far off-screen.
+//
+// Fragmentation CSS (orphans, widows, break-inside) prevents lines and
+// block elements from being cut at column boundaries — the browser
+// handles line-breaking natively, so no overlap hack is needed.
 
 function trace(stage, detail) {
   try {
@@ -59,8 +61,13 @@ var book = null;
 var rendition = null;
 var pendingHref = null;
 var currentFontSize = 18;
-// Guard against overlapping page-turn calls.
 var isNavigating = false;
+
+// Column-pagination state
+var colBody = null;   // the iframe <body> we paginate
+var pageW = 0;        // scroll step per page (= viewport width)
+var curPage = 0;
+var setupTimer = null;
 
 function notify(name, payload) {
   try {
@@ -93,23 +100,13 @@ function loadBook(base64Data, href) {
       var origGetText = book.archive.getText.bind(book.archive);
       book.archive.getText = function (path, encoding) {
         var result = origGetText(path, encoding);
-        // Pass-through for everything that isn't a chapter — same return
-        // type the original returned (sync or Promise). Some epub.js
-        // callers expect sync return; wrapping unconditionally with
-        // Promise.resolve breaks them.
         if (!/\.x?html?$/i.test(path || "")) return result;
         return Promise.resolve(result).then(function (text) {
           if (typeof text !== "string") return text;
-          // Drop-cap collapse: <span class="drop-cap"><</span>b>L</b>
-          // → <span class="drop-cap">L</span>. The regex needs TWO `<`
-          // between the drop-cap span and </span>: the first is the
-          // broken literal `<` the producer emits, the second is the
-          // `<` of the </span> closing tag.
           text = text.replace(
             /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
             "<span class=\"drop-cap\">$1</span>"
           );
-          // Self-close void elements XHTML requires closed.
           text = text.replace(
             /<(img|br|hr|input|source|wbr)([^>]*)>/g,
             function (m, tag, attrs) {
@@ -140,13 +137,13 @@ function loadBook(base64Data, href) {
       try { notify("onRelocated", location.start.cfi || ""); } catch (_) {}
     });
 
+    rendition.on("displayed", function () {
+      scheduleSetup();
+    });
+
     book.ready.then(function () {
       var hide = document.getElementById("loading");
       if (hide) hide.style.display = "none";
-      // Always display the first chapter first — passing an href that
-      // doesn't match epub.js's normalised spine entries makes
-      // rendition.display() hang silently. Then navigate to the
-      // requested href as a follow-up.
       return rendition.display();
     }).then(function () {
       notify("onReady", "");
@@ -161,62 +158,121 @@ function loadBook(base64Data, href) {
   }
 }
 
-// In scrolled-doc mode epub.js sizes the iframe to the full chapter
-// height, so the iframe's own contentWindow has no overflow. The
-// scrollable element is the epub.js-managed wrapper (`div.epub-container`,
-// overflow:auto) that sits between #viewer and the iframe — walk up
-// from the iframe to find it.
-function findScrollContainer() {
-  var iframes = document.querySelectorAll("#viewer iframe");
-  if (!iframes.length) return null;
-  var el = iframes[iframes.length - 1].parentElement;
-  while (el && el !== document.body) {
-    if (el.scrollHeight > el.clientHeight + 1) return el;
-    el = el.parentElement;
-  }
-  return null;
+// ── Column pagination ──────────────────────────────────────────────
+
+function scheduleSetup() {
+  if (setupTimer) clearTimeout(setupTimer);
+  setupTimer = setTimeout(setupPagination, 150);
 }
 
-// 24px overlap so the last line of a screen reappears as the first line
-// of the next, which keeps the reader from losing half a line at a flip.
-function pageStep(container) {
-  return Math.max(40, (container.clientHeight || 600) - 24);
+function setupPagination() {
+  var iframes = document.querySelectorAll("#viewer iframe");
+  if (!iframes.length) { trace("paginate", "no iframes"); return; }
+  var iframe = iframes[iframes.length - 1];
+  var doc = iframe.contentDocument;
+  if (!doc || !doc.body) { trace("paginate", "no doc/body"); return; }
+
+  // Freeze the epub-container's vertical scroll — we paginate
+  // horizontally inside the iframe instead.
+  var el = iframe.parentElement;
+  while (el && el !== document.body) {
+    if (el.scrollHeight > el.clientHeight + 1) {
+      el.style.overflowY = "hidden";
+      el.scrollTop = 0;
+      break;
+    }
+    el = el.parentElement;
+  }
+
+  var viewer = document.getElementById("viewer");
+  var vw = viewer.clientWidth || window.innerWidth;
+  var vh = viewer.clientHeight || window.innerHeight;
+  if (vw < 10 || vh < 10) { trace("paginate", "bad dims"); return; }
+
+  // Padding that doubles as the column gap: each page shows
+  // [PAD] column-content [PAD], with the gap split evenly between
+  // adjacent pages so every page has equal margins.
+  var PAD = Math.max(8, Math.min(32, Math.round(vw * 0.04)));
+  var GAP = 2 * PAD;
+  var colW = vw - GAP;
+
+  var html = doc.documentElement;
+  var body = doc.body;
+
+  html.style.setProperty("overflow", "hidden", "important");
+  html.style.setProperty("height", vh + "px", "important");
+  html.style.setProperty("margin", "0", "important");
+
+  // Column layout on <body>.  overflow:auto forces WebView to render
+  // every column (overflow:hidden + column-fill:auto caused it to
+  // skip columns far from the viewport on earlier Android versions).
+  body.style.setProperty("height", vh + "px", "important");
+  body.style.setProperty("max-height", vh + "px", "important");
+  body.style.setProperty("margin", "0", "important");
+  body.style.setProperty("padding", PAD + "px", "important");
+  body.style.setProperty("box-sizing", "border-box", "important");
+  body.style.setProperty("overflow", "auto", "important");
+  body.style.setProperty("column-width", colW + "px", "important");
+  body.style.setProperty("column-gap", GAP + "px", "important");
+  body.style.setProperty("column-fill", "auto", "important");
+  body.style.setProperty("scrollbar-width", "none", "important");
+  // Prevent descender/ascender clipping at column boundaries (Readium technique)
+  body.style.setProperty("-webkit-line-box-contain", "block glyphs replaced", "important");
+
+  // Fragmentation rules + scrollbar hide
+  var id = "mr-col-css";
+  var prev = doc.getElementById(id);
+  if (prev) prev.remove();
+  var s = doc.createElement("style");
+  s.id = id;
+  s.textContent =
+    "body::-webkit-scrollbar { display: none !important; }\n" +
+    "* { orphans: 2 !important; widows: 2 !important; }\n" +
+    "h1, h2, h3, h4, h5, h6 { break-after: avoid !important; }\n" +
+    "h1, h2, h3, h4, h5, h6, img, figure, table, pre, blockquote { break-inside: avoid !important; }\n" +
+    "img, figure, video { max-width: 100% !important; height: auto !important; break-inside: avoid !important; }\n";
+  doc.head.appendChild(s);
+
+  colBody = body;
+  pageW = vw;
+  curPage = 0;
+  body.scrollLeft = 0;
+
+  // Read scrollWidth after layout settles
+  requestAnimationFrame(function () {
+    var pages = Math.max(1, Math.round(body.scrollWidth / vw));
+    trace("paginate", "vw=" + vw + " vh=" + vh + " pad=" + PAD +
+      " pages=" + pages + " scrollW=" + body.scrollWidth);
+  });
 }
 
 function goNext() {
-  if (isNavigating) return;
-  isNavigating = true;
-  try {
-    var c = findScrollContainer();
-    if (!c) return;
-    var target = Math.min(c.scrollHeight - c.clientHeight, c.scrollTop + pageStep(c));
-    if (target > c.scrollTop) c.scrollTop = target;
-  } finally {
-    isNavigating = false;
-  }
+  if (!colBody) return;
+  var maxScroll = colBody.scrollWidth - pageW;
+  if (curPage * pageW >= maxScroll - 2) return;
+  curPage++;
+  colBody.scrollLeft = curPage * pageW;
 }
 
 function goPrev() {
-  if (isNavigating) return;
-  isNavigating = true;
-  try {
-    var c = findScrollContainer();
-    if (!c) return;
-    var target = Math.max(0, c.scrollTop - pageStep(c));
-    if (target < c.scrollTop) c.scrollTop = target;
-  } finally {
-    isNavigating = false;
-  }
+  if (!colBody || curPage <= 0) return;
+  curPage--;
+  colBody.scrollLeft = curPage * pageW;
 }
 
 function goToHref(href) {
   pendingHref = href;
+  colBody = null;
+  curPage = 0;
   if (rendition) rendition.display(href);
 }
 
 function setFontSize(px) {
   currentFontSize = Math.max(10, Math.min(40, px | 0));
-  if (rendition) rendition.themes.fontSize(currentFontSize + "px");
+  if (rendition) {
+    rendition.themes.fontSize(currentFontSize + "px");
+    scheduleSetup();
+  }
 }
 
 window.loadBook = loadBook;

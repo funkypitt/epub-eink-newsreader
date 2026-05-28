@@ -114,23 +114,18 @@ fun MagazineArticleContent(
 
 /**
  * Hosts the bundled `assets/epubjs/reader.html` in a WebView. epub.js
- * paginates the chapter natively via `flow: "paginated"` — no scroll
- * math, no line-alignment hacks, no half-cut letters: it lays the body
- * out in iframe-rendered columns and swaps which column is shown on
- * `rendition.next()`.
+ * loads the chapter in scrolled-doc mode, then CSS multi-column layout
+ * is applied to the iframe body for proper pagination (inspired by the
+ * Readium toolkit, BSD-3-Clause). The browser handles line-breaking at
+ * column boundaries natively — no overlap hack, no half-cut lines.
  *
- * The whole ePub is shipped to JS as a base64 string (same approach
- * funky-openlib's e-ink reader uses); epub.js then displays the
- * requested chapter by href.
+ * The whole ePub is shipped to JS as a base64 string; epub.js then
+ * displays the requested chapter by href.
  *
  * Three Compose tap zones overlay the WebView:
  * - left  → previous page in the article
  * - centre → toggle the chrome overlay (handled in the parent)
  * - right → next page
- *
- * Page-turn is delegated to `rendition.next()` / `rendition.prev()`
- * via `evaluateJavascript`. Font size from the footer is mapped onto
- * `setFontSize(px)` (50% — 200% mapped to 12 — 28px).
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
