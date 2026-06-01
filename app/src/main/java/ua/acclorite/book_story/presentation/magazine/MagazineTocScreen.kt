@@ -7,6 +7,7 @@
 package ua.acclorite.book_story.presentation.magazine
 
 import android.os.Parcelable
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +48,8 @@ data class MagazineTocScreen(
             }
         }
 
+        BackHandler { navigator.goToLibrary() }
+
         MagazineTocContent(
             state = state,
             onArticleClick = { article ->
@@ -58,7 +61,7 @@ data class MagazineTocScreen(
                     )
                 )
             },
-            onHome = { navigator.pop() },
+            onHome = { navigator.goToLibrary() },
             onAppHome = { navigator.goToLibrary() },
         )
     }

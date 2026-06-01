@@ -62,12 +62,14 @@ var rendition = null;
 var pendingHref = null;
 var currentFontSize = 18;
 var isNavigating = false;
+var bookReady = false;
 
 // Column-pagination state
 var colBody = null;   // the iframe <body> we paginate
 var pageW = 0;        // scroll step per page (= viewport width)
 var curPage = 0;
 var setupTimer = null;
+var pendingFontSize = 0;
 
 function notify(name, payload) {
   try {
@@ -78,6 +80,8 @@ function notify(name, payload) {
 }
 
 function loadBook(base64Data, href) {
+  bookReady = false;
+  pendingFontSize = 0;
   pendingHref = href || null;
   trace("loadBook.entered", "href=" + (href || "(none)") +
     " base64Length=" + (base64Data ? base64Data.length : 0));
@@ -148,6 +152,12 @@ function loadBook(base64Data, href) {
     }).then(function () {
       notify("onReady", "");
       if (pendingHref) return rendition.display(pendingHref);
+    }).then(function () {
+      bookReady = true;
+      if (pendingFontSize > 0) {
+        setFontSize(pendingFontSize);
+        pendingFontSize = 0;
+      }
     }).catch(function (e) {
       trace("ready/display-rejected", e && (e.message || e));
       notify("onError", "ready: " + (e && e.message || e));
@@ -269,6 +279,10 @@ function goToHref(href) {
 
 function setFontSize(px) {
   currentFontSize = Math.max(10, Math.min(40, px | 0));
+  if (!bookReady) {
+    pendingFontSize = currentFontSize;
+    return;
+  }
   if (rendition) {
     rendition.themes.fontSize(currentFontSize + "px");
     scheduleSetup();

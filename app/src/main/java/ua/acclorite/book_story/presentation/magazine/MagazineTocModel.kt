@@ -91,7 +91,7 @@ class MagazineTocModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     epubPath = rawFile.absolutePath,
-                    errorMessage = "This ePub is not a magazine.",
+                    errorMessage = "Could not parse this ePub.",
                 )
             }
             return

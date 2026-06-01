@@ -30,7 +30,7 @@ private const val TAG = "MagazineParser"
 class MagazineParser @Inject constructor() {
 
     fun canParse(file: File): Boolean = openZip(file)?.use { zip ->
-        runCatching { detect(zip) != null }.getOrDefault(false)
+        runCatching { readEpubContext(zip) != null }.getOrDefault(false)
     } ?: false
 
     fun parse(file: File): MagazineIssue? = openZip(file)?.use { zip ->
@@ -69,7 +69,7 @@ class MagazineParser @Inject constructor() {
 
     private fun parseInternal(zip: ZipFile): MagazineIssue? {
         val ctx = readEpubContext(zip) ?: return null
-        val mode = detect(zip) ?: return null
+        val mode = detect(zip)
 
         val title = ctx.opf.select("metadata > dc|title").text().trim()
         val publisher = ctx.opf.select("metadata > dc|publisher").text().trim()
@@ -79,6 +79,7 @@ class MagazineParser @Inject constructor() {
         val articles = when (mode) {
             Mode.NAV_STRUCTURED -> parseFromNav(zip, ctx)
             Mode.CONTENT_STRUCTURED -> parseFromContent(zip, ctx)
+            null -> parseGenericEpub(zip, ctx)
         }
         if (articles.isEmpty()) return null
 
@@ -145,6 +146,54 @@ class MagazineParser @Inject constructor() {
                 coverImageHref = cover,
             )
         }
+    }
+
+    private fun parseGenericEpub(zip: ZipFile, ctx: EpubContext): List<MagazineArticle> {
+        val navTitles = extractNavTitles(zip, ctx)
+        val bookTitle = ctx.opf.select("metadata > dc|title").text().trim()
+        return ctx.spineHrefs.mapIndexedNotNull { idx, href ->
+            val item = ctx.manifest.values.firstOrNull { it.href == href } ?: return@mapIndexedNotNull null
+            if (!item.mediaType.contains("xhtml", true) && !item.mediaType.contains("html", true)) return@mapIndexedNotNull null
+            if (item.id == "toc" || item.id == "title-page" || item.properties.contains("nav")) return@mapIndexedNotNull null
+            val title = navTitles[href]
+                ?: readChapterTitle(zip, ctx, href)
+                ?: "Chapter ${idx + 1}"
+            val cover = readChapterCover(zip, ctx, href)
+            MagazineArticle(
+                spineIndex = idx,
+                contentHref = href,
+                title = title,
+                category = bookTitle.ifBlank { "Book" },
+                author = null,
+                lead = null,
+                coverImageHref = cover,
+            )
+        }
+    }
+
+    private fun extractNavTitles(zip: ZipFile, ctx: EpubContext): Map<String, String> {
+        val navHref = ctx.navHref ?: return emptyMap()
+        val navText = ctx.readResource(zip, navHref) ?: return emptyMap()
+        val nav = Jsoup.parse(navText, Parser.xmlParser())
+        val map = mutableMapOf<String, String>()
+        for (a in nav.select("li > a")) {
+            val href = a.attr("href").substringBefore('#').trim()
+            val text = a.text().trim()
+            if (href.isNotBlank() && text.isNotBlank()) map[href] = text
+        }
+        return map
+    }
+
+    private fun readChapterTitle(zip: ZipFile, ctx: EpubContext, href: String): String? {
+        val text = ctx.readResource(zip, href) ?: return null
+        val doc = Jsoup.parse(text, Parser.xmlParser())
+        return doc.selectFirst("h1, h2, h3, title")?.text()?.trim()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun readChapterCover(zip: ZipFile, ctx: EpubContext, href: String): String? {
+        val text = ctx.readResource(zip, href) ?: return null
+        val doc = Jsoup.parse(text, Parser.xmlParser())
+        return extractCoverImage(doc)
     }
 
     private fun readChapterMeta(
