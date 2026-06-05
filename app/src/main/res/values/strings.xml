@@ -508,4 +508,23 @@
     <string name="remove_content_desc">Remove</string>
     <string name="note_content_desc">Note</string>
 
+    <!-- Sync settings -->
+    <string name="sync_settings">Sync</string>
+    <string name="sync_settings_desc">kDrive WebDAV sync</string>
+    <string name="sync_enabled_option">Enable sync</string>
+    <string name="sync_enabled_option_desc">Automatically sync EPUBs from kDrive</string>
+    <string name="sync_url_option">WebDAV URL</string>
+    <string name="sync_url_option_desc">kDrive folder URL</string>
+    <string name="sync_username_option">Username</string>
+    <string name="sync_password_option">Password</string>
+    <string name="sync_interval_option">Sync interval</string>
+    <string name="sync_interval_hours">%1$d hours</string>
+    <string name="sync_now_option">Sync now</string>
+    <string name="sync_last_time">Last sync: %1$s</string>
+    <string name="sync_never">Never synced</string>
+    <string name="sync_in_progress">Syncing…</string>
+    <string name="sync_success">Sync complete: %1$d new, %2$d skipped</string>
+    <string name="sync_failed">Sync failed: %1$s</string>
+    <string name="sync_credentials_missing">Configure WebDAV URL, username and password first</string>
+
 </resources>

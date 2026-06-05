@@ -150,7 +150,9 @@ class MagazineParser @Inject constructor() {
 
     private fun parseGenericEpub(zip: ZipFile, ctx: EpubContext): List<MagazineArticle> {
         val navTitles = extractNavTitles(zip, ctx)
+        val publisher = ctx.opf.select("metadata > dc|publisher").text().trim()
         val bookTitle = ctx.opf.select("metadata > dc|title").text().trim()
+        val category = publisher.ifBlank { bookTitle }.ifBlank { "Book" }
         return ctx.spineHrefs.mapIndexedNotNull { idx, href ->
             val item = ctx.manifest.values.firstOrNull { it.href == href } ?: return@mapIndexedNotNull null
             if (!item.mediaType.contains("xhtml", true) && !item.mediaType.contains("html", true)) return@mapIndexedNotNull null
@@ -163,7 +165,7 @@ class MagazineParser @Inject constructor() {
                 spineIndex = idx,
                 contentHref = href,
                 title = title,
-                category = bookTitle.ifBlank { "Book" },
+                category = category,
                 author = null,
                 lead = null,
                 coverImageHref = cover,

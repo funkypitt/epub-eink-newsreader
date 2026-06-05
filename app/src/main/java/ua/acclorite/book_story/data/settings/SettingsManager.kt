@@ -164,6 +164,27 @@ class SettingsManager @Inject constructor(
         key = stringSetPreferencesKey("browse_pinned_paths"), default = emptyList(),
         serialize = { it.toSet() }, deserialize = { it.toList() }
     )
+
+    /* ------ Sync ------------------------------ */
+    val kdriveSyncEnabled = setting<Boolean, Boolean>(
+        key = booleanPreferencesKey("kdrive_sync_enabled"), default = false
+    )
+    val kdriveSyncUrl = setting<String, String>(
+        key = stringPreferencesKey("kdrive_sync_url"), default = ""
+    )
+    val kdriveSyncUsername = setting<String, String>(
+        key = stringPreferencesKey("kdrive_sync_username"), default = ""
+    )
+    val kdriveSyncPassword = setting<String, String>(
+        key = stringPreferencesKey("kdrive_sync_password"), default = ""
+    )
+    val kdriveSyncIntervalHours = setting<Int, Int>(
+        key = intPreferencesKey("kdrive_sync_interval_hours"), default = 6
+    )
+    val kdriveSyncLastTime = setting<Long, String>(
+        key = stringPreferencesKey("kdrive_sync_last_time"), default = 0L,
+        serialize = { it.toString() }, deserialize = { it.toLongOrNull() ?: 0L }
+    )
     /* - - - - - - - - - - - - - - - - - - - - - - */
 
 

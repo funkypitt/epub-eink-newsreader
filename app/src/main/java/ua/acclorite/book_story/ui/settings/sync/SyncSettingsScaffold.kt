@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-package ua.acclorite.book_story.ui.settings
+package ua.acclorite.book_story.ui.settings.sync
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,15 +21,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScaffold(
+fun SyncSettingsScaffold(
     listState: LazyListState,
     scrollBehavior: TopAppBarScrollBehavior,
-    navigateToGeneralSettings: () -> Unit,
-    navigateToAppearanceSettings: () -> Unit,
-    navigateToLibrarySettings: () -> Unit,
-    navigateToBrowseSettings: () -> Unit,
-    navigateToSyncSettings: () -> Unit,
-    navigateToStart: () -> Unit,
     navigateBack: () -> Unit
 ) {
     Scaffold(
@@ -39,21 +33,15 @@ fun SettingsScaffold(
             .windowInsetsPadding(WindowInsets.navigationBars),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            SettingsTopBar(
+            SyncSettingsTopBar(
                 scrollBehavior = scrollBehavior,
-                navigateToStart = navigateToStart,
                 navigateBack = navigateBack
             )
         }
     ) { paddingValues ->
-        SettingsLayout(
+        SyncSettingsLayout(
             listState = listState,
-            paddingValues = paddingValues,
-            navigateToGeneralSettings = navigateToGeneralSettings,
-            navigateToAppearanceSettings = navigateToAppearanceSettings,
-            navigateToLibrarySettings = navigateToLibrarySettings,
-            navigateToBrowseSettings = navigateToBrowseSettings,
-            navigateToSyncSettings = navigateToSyncSettings
+            paddingValues = paddingValues
         )
     }
 }

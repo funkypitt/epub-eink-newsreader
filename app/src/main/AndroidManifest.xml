@@ -12,6 +12,8 @@
         android:name="ua.acclorite.book_story.release.debug.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         tools:node="remove" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Removing READ_EXTERNAL_STORAGE and WRITE_EXTERNAL_STORAGE explicitly -->
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
@@ -79,6 +81,18 @@
             android:exported="false"
             android:theme="@style/BookStory"
             android:windowSoftInputMode="adjustResize" />
+
+        <!-- Disable default WorkManager initializer (we use HiltWorkerFactory) -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- Save app locales -->
         <service

@@ -159,6 +159,13 @@ dependencies {
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
+    // HTTP (explicit — also transitive via Coil)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // WorkManager (background sync)
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+
     // Unit tests
     testImplementation("junit:junit:4.13.2")
 }

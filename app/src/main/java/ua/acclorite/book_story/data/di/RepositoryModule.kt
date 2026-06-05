@@ -23,9 +23,11 @@ import ua.acclorite.book_story.data.parser.file.FileParserImpl
 import ua.acclorite.book_story.data.repository.BookRepositoryImpl
 import ua.acclorite.book_story.data.repository.FileSystemRepositoryImpl
 import ua.acclorite.book_story.data.repository.PermissionRepositoryImpl
+import ua.acclorite.book_story.data.repository.SyncRepositoryImpl
 import ua.acclorite.book_story.domain.repository.BookRepository
 import ua.acclorite.book_story.domain.repository.FileSystemRepository
 import ua.acclorite.book_story.domain.repository.PermissionRepository
+import ua.acclorite.book_story.domain.repository.SyncRepository
 import javax.inject.Singleton
 
 @Module
@@ -78,4 +80,10 @@ abstract class RepositoryModule {
     abstract fun bindCoverParser(
         coverParserImpl: CoverParserImpl
     ): CoverParser
+
+    @Binds
+    @Singleton
+    abstract fun bindSyncRepository(
+        syncRepositoryImpl: SyncRepositoryImpl
+    ): SyncRepository
 }

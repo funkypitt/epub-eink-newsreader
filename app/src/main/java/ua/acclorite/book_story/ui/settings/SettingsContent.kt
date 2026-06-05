@@ -20,6 +20,7 @@ fun SettingsContent(
     navigateToAppearanceSettings: () -> Unit,
     navigateToLibrarySettings: () -> Unit,
     navigateToBrowseSettings: () -> Unit,
+    navigateToSyncSettings: () -> Unit,
     navigateToStart: () -> Unit,
     navigateBack: () -> Unit
 ) {
@@ -30,6 +31,7 @@ fun SettingsContent(
         navigateToAppearanceSettings = navigateToAppearanceSettings,
         navigateToLibrarySettings = navigateToLibrarySettings,
         navigateToBrowseSettings = navigateToBrowseSettings,
+        navigateToSyncSettings = navigateToSyncSettings,
         navigateToStart = navigateToStart,
         navigateBack = navigateBack
     )

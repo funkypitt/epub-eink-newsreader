@@ -48,6 +48,21 @@ data class MagazineTocScreen(
             }
         }
 
+        // Single-article EPUBs: skip the TOC, go straight to the article.
+        val allArticles = state.issue?.sections?.flatMap { it.articles }
+        LaunchedEffect(allArticles) {
+            if (allArticles != null && allArticles.size == 1) {
+                navigator.push(
+                    targetScreen = MagazineArticleScreen(
+                        bookId = bookId,
+                        epubPath = epubPath,
+                        articleHref = allArticles[0].contentHref,
+                    ),
+                    saveInBackStack = false,
+                )
+            }
+        }
+
         BackHandler { navigator.goToLibrary() }
 
         MagazineTocContent(
