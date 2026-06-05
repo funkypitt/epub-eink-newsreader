@@ -199,6 +199,18 @@ function setupPagination() {
   var vh = viewer.clientHeight || window.innerHeight;
   if (vw < 10 || vh < 10) { trace("paginate", "bad dims"); return; }
 
+  // epub.js sizes the iframe while the stage container still has
+  // overflow-y:scroll, which can make the iframe narrower than the
+  // viewer.  Force it (and its wrapper) to fill the viewer so our
+  // column maths match the actual available width.
+  iframe.style.setProperty("width", vw + "px", "important");
+  iframe.style.setProperty("height", vh + "px", "important");
+  var iframeWrap = iframe.parentElement;
+  if (iframeWrap && iframeWrap !== viewer) {
+    iframeWrap.style.setProperty("width", vw + "px", "important");
+    iframeWrap.style.setProperty("height", vh + "px", "important");
+  }
+
   // Padding that doubles as the column gap: each page shows
   // [PAD] column-content [PAD], with the gap split evenly between
   // adjacent pages so every page has equal margins.
@@ -248,26 +260,34 @@ function setupPagination() {
   curPage = 0;
   body.scrollLeft = 0;
 
-  // Read scrollWidth after layout settles
+  // After layout settles, derive pageW from actual scrollWidth so the
+  // scroll step matches the browser's real column pitch exactly.
   requestAnimationFrame(function () {
-    var pages = Math.max(1, Math.round(body.scrollWidth / vw));
-    trace("paginate", "vw=" + vw + " vh=" + vh + " pad=" + PAD +
-      " pages=" + pages + " scrollW=" + body.scrollWidth);
+    requestAnimationFrame(function () {
+      var sw = body.scrollWidth;
+      var pages = Math.max(1, Math.round(sw / vw));
+      if (sw > vw) pageW = sw / pages;
+      trace("paginate", "vw=" + vw + " vh=" + vh + " pad=" + PAD +
+        " pages=" + pages + " pageW=" + pageW + " scrollW=" + sw);
+    });
   });
 }
 
 function goNext() {
-  if (!colBody) return;
-  var maxScroll = colBody.scrollWidth - pageW;
-  if (curPage * pageW >= maxScroll - 2) return;
+  if (!colBody || pageW < 1) return;
+  var sw = colBody.scrollWidth;
+  var pages = Math.max(1, Math.round(sw / pageW));
+  if (curPage >= pages - 1) return;
   curPage++;
-  colBody.scrollLeft = curPage * pageW;
+  colBody.scrollLeft = Math.round(curPage * sw / pages);
 }
 
 function goPrev() {
   if (!colBody || curPage <= 0) return;
   curPage--;
-  colBody.scrollLeft = curPage * pageW;
+  var sw = colBody.scrollWidth;
+  var pages = Math.max(1, Math.round(sw / pageW));
+  colBody.scrollLeft = Math.round(curPage * sw / pages);
 }
 
 function goToHref(href) {
