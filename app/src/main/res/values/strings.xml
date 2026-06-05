@@ -513,6 +513,8 @@
     <string name="sync_settings_desc">kDrive WebDAV sync</string>
     <string name="sync_enabled_option">Enable sync</string>
     <string name="sync_enabled_option_desc">Automatically sync EPUBs from kDrive</string>
+    <string name="sync_share_link_option">kDrive share link</string>
+    <string name="sync_share_link_option_desc">Paste a public kDrive folder link</string>
     <string name="sync_url_option">WebDAV URL</string>
     <string name="sync_url_option_desc">kDrive folder URL</string>
     <string name="sync_username_option">Username</string>

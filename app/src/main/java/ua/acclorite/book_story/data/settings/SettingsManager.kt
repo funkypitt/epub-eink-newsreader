@@ -169,6 +169,9 @@ class SettingsManager @Inject constructor(
     val kdriveSyncEnabled = setting<Boolean, Boolean>(
         key = booleanPreferencesKey("kdrive_sync_enabled"), default = false
     )
+    val kdriveShareLink = setting<String, String>(
+        key = stringPreferencesKey("kdrive_share_link"), default = ""
+    )
     val kdriveSyncUrl = setting<String, String>(
         key = stringPreferencesKey("kdrive_sync_url"), default = ""
     )

@@ -12,7 +12,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.core.log.logE
 import ua.acclorite.book_story.core.log.logI
+import ua.acclorite.book_story.data.remote.KDrivePublicShareClient
 import ua.acclorite.book_story.data.remote.WebDavClient
+import ua.acclorite.book_story.data.remote.WebDavFile
 import ua.acclorite.book_story.data.settings.SettingsManager
 import ua.acclorite.book_story.domain.model.file.File as DomainFile
 import ua.acclorite.book_story.domain.repository.BookRepository
@@ -30,6 +32,7 @@ private const val TAG = "SyncRepository"
 class SyncRepositoryImpl @Inject constructor(
     private val application: Application,
     private val webDavClient: WebDavClient,
+    private val kdriveClient: KDrivePublicShareClient,
     private val settingsManager: SettingsManager,
     private val bookRepository: BookRepository,
     private val getBookFromFile: GetBookFromFileUseCase,
@@ -41,70 +44,100 @@ class SyncRepositoryImpl @Inject constructor(
 
     override suspend fun syncFromWebDav(): Result<SyncResult> = withContext(Dispatchers.IO) {
         runCatching {
-            val url = settingsManager.kdriveSyncUrl.lastValue
-            val username = settingsManager.kdriveSyncUsername.lastValue
-            val password = settingsManager.kdriveSyncPassword.lastValue
-
-            if (url.isBlank() || username.isBlank() || password.isBlank()) {
-                throw IllegalStateException("WebDAV credentials not configured")
+            val shareLink = settingsManager.kdriveShareLink.lastValue
+            if (shareLink.isNotBlank()) {
+                syncViaPublicShare(shareLink)
+            } else {
+                syncViaWebDav()
             }
-
-            logI(TAG, "Starting sync from $url")
-
-            val remoteFiles = webDavClient.listFiles(url, username, password).getOrThrow()
-            val epubs = remoteFiles.filter {
-                !it.isDirectory
-                        && it.name.endsWith(".epub", ignoreCase = true)
-                        && !it.name.contains("_blacklisted_")
-            }
-
-            logI(TAG, "Found ${epubs.size} remote EPUBs")
-
-            val existingBooks = bookRepository.searchBooks("").getOrDefault(emptyList())
-            val existingNames = existingBooks.map { book ->
-                book.filePath.substringAfterLast('/').lowercase()
-            }.toSet()
-
-            val localFiles = syncDir.listFiles()?.map { it.name.lowercase() }?.toSet() ?: emptySet()
-            val knownNames = existingNames + localFiles
-
-            val newEpubs = epubs.filter { remote ->
-                remote.name.lowercase() !in knownNames
-            }
-
-            logI(TAG, "${newEpubs.size} new EPUBs to download")
-
-            var downloaded = 0
-            var failed = 0
-
-            for (remote in newEpubs) {
-                val destination = File(syncDir, remote.name)
-                val result = webDavClient.downloadFile(
-                    remote.href, username, password, destination
-                )
-
-                if (result.isSuccess) {
-                    val importResult = importDownloadedEpub(destination)
-                    if (importResult) {
-                        downloaded++
-                    } else {
-                        failed++
-                    }
-                } else {
-                    failed++
-                }
-            }
-
-            logI(TAG, "Sync complete: $downloaded downloaded, ${epubs.size - newEpubs.size} skipped, $failed failed")
-
-            SyncResult(
-                downloaded = downloaded,
-                skipped = epubs.size - newEpubs.size,
-                failed = failed
-            )
         }.also {
             it.onFailure { e -> logE(TAG, "Sync failed: ${e.message}") }
         }
+    }
+
+    private suspend fun syncViaPublicShare(shareLink: String): SyncResult {
+        val (driveId, linkUuid) = kdriveClient.parseShareUrl(shareLink)
+            ?: throw IllegalStateException("Invalid kDrive share link")
+
+        logI(TAG, "Starting sync via public share: driveId=$driveId")
+
+        val config = kdriveClient.init(driveId, linkUuid).getOrThrow()
+        val remoteFiles = kdriveClient.listFiles(config).getOrThrow()
+        val epubs = filterEpubs(remoteFiles)
+
+        logI(TAG, "Found ${epubs.size} remote EPUBs")
+
+        val knownNames = getKnownNames()
+        val newEpubs = epubs.filter { it.name.lowercase() !in knownNames }
+
+        logI(TAG, "${newEpubs.size} new EPUBs to download")
+
+        var downloaded = 0
+        var failed = 0
+
+        for (remote in newEpubs) {
+            val destination = File(syncDir, remote.name)
+            val result = kdriveClient.downloadFile(config, remote.href, destination)
+            if (result.isSuccess && importDownloadedEpub(destination)) {
+                downloaded++
+            } else {
+                failed++
+            }
+        }
+
+        logI(TAG, "Sync complete: $downloaded downloaded, ${epubs.size - newEpubs.size} skipped, $failed failed")
+        return SyncResult(downloaded, epubs.size - newEpubs.size, failed)
+    }
+
+    private suspend fun syncViaWebDav(): SyncResult {
+        val url = settingsManager.kdriveSyncUrl.lastValue
+        val username = settingsManager.kdriveSyncUsername.lastValue
+        val password = settingsManager.kdriveSyncPassword.lastValue
+
+        if (url.isBlank() || username.isBlank() || password.isBlank()) {
+            throw IllegalStateException("WebDAV credentials not configured")
+        }
+
+        logI(TAG, "Starting sync from $url")
+
+        val remoteFiles = webDavClient.listFiles(url, username, password).getOrThrow()
+        val epubs = filterEpubs(remoteFiles)
+
+        logI(TAG, "Found ${epubs.size} remote EPUBs")
+
+        val knownNames = getKnownNames()
+        val newEpubs = epubs.filter { it.name.lowercase() !in knownNames }
+
+        logI(TAG, "${newEpubs.size} new EPUBs to download")
+
+        var downloaded = 0
+        var failed = 0
+
+        for (remote in newEpubs) {
+            val destination = File(syncDir, remote.name)
+            val result = webDavClient.downloadFile(remote.href, username, password, destination)
+            if (result.isSuccess && importDownloadedEpub(destination)) {
+                downloaded++
+            } else {
+                failed++
+            }
+        }
+
+        logI(TAG, "Sync complete: $downloaded downloaded, ${epubs.size - newEpubs.size} skipped, $failed failed")
+        return SyncResult(downloaded, epubs.size - newEpubs.size, failed)
+    }
+
+    private fun filterEpubs(files: List<WebDavFile>): List<WebDavFile> = files.filter {
+        !it.isDirectory
+                && it.name.endsWith(".epub", ignoreCase = true)
+                && !it.name.contains("_blacklisted_")
+    }
+
+    private suspend fun getKnownNames(): Set<String> {
+        val existingBooks = bookRepository.searchBooks("").getOrDefault(emptyList())
+        val existingNames = existingBooks.map { it.filePath.substringAfterLast('/').lowercase() }.toSet()
+        val localFiles = syncDir.listFiles()?.map { it.name.lowercase() }?.toSet() ?: emptySet()
+        return existingNames + localFiles
     }
 
     private suspend fun importDownloadedEpub(file: File): Boolean {
