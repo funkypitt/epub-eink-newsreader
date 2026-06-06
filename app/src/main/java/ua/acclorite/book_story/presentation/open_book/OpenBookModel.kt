@@ -6,6 +6,7 @@
 
 package ua.acclorite.book_story.presentation.open_book
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,6 +19,7 @@ import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
 import ua.acclorite.book_story.domain.service.FileProvider
 import ua.acclorite.book_story.domain.use_case.book.GetBookUseCase
+import java.io.File
 import javax.inject.Inject
 
 sealed class OpenBookTarget {
@@ -28,6 +30,7 @@ sealed class OpenBookTarget {
 
 @HiltViewModel
 class OpenBookModel @Inject constructor(
+    private val application: Application,
     private val getBook: GetBookUseCase,
     private val fileProvider: FileProvider,
     private val magazineParser: MagazineParser,
@@ -39,11 +42,6 @@ class OpenBookModel @Inject constructor(
     )
     val target = _target.asSharedFlow()
 
-    // Track which bookId we last decided for. The activity-scoped VM
-    // outlives a single OpenBookScreen, so a plain boolean flag would
-    // make every subsequent magazine open re-emit the *previous*
-    // result through the replay-1 SharedFlow — landing the user in
-    // whichever issue they opened first.
     private var lastDecidedBookId: Int? = null
 
     fun decide(bookId: Int) {
@@ -54,8 +52,7 @@ class OpenBookModel @Inject constructor(
             val isMagazine = book?.let {
                 withContext(Dispatchers.IO) {
                     runCatching {
-                        val rawFile = fileProvider.getFileFromBook(it).getOrNull()?.rawFile
-                            ?: return@runCatching false
+                        val rawFile = resolveFile(it.filePath) ?: return@runCatching false
                         magazineParser.canParse(rawFile)
                     }.getOrDefault(false)
                 }
@@ -65,5 +62,13 @@ class OpenBookModel @Inject constructor(
                 else OpenBookTarget.Unsupported(bookId)
             )
         }
+    }
+
+    private fun resolveFile(filePath: String): File? {
+        val file = File(filePath)
+        if (file.exists() && file.canRead()) return file
+        return fileProvider.getFileFromBook(
+            ua.acclorite.book_story.domain.model.library.Book.default.copy(filePath = filePath)
+        ).getOrNull()?.rawFile
     }
 }

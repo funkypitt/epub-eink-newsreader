@@ -45,9 +45,7 @@ class MagazineArticleModel @Inject constructor(
                     _state.update { MagazineArticleState(isLoading = false, errorMessage = "Book #$bookId not found.") }
                     return@launch
                 }
-                val rawFile = withContext(Dispatchers.IO) {
-                    fileProvider.getFileFromBook(book).getOrNull()?.rawFile
-                }
+                val rawFile = withContext(Dispatchers.IO) { resolveFile(book.filePath) }
                 if (rawFile == null) {
                     _state.update {
                         MagazineArticleState(isLoading = false, errorMessage = "Could not access ePub file.")
@@ -70,6 +68,14 @@ class MagazineArticleModel @Inject constructor(
             }
             selectArticle(articleHref)
         }
+    }
+
+    private fun resolveFile(filePath: String): File? {
+        val file = File(filePath)
+        if (file.exists() && file.canRead()) return file
+        return fileProvider.getFileFromBook(
+            ua.acclorite.book_story.domain.model.library.Book.default.copy(filePath = filePath)
+        ).getOrNull()?.rawFile
     }
 
     fun loadFromPath(epubPath: String, articleHref: String) {

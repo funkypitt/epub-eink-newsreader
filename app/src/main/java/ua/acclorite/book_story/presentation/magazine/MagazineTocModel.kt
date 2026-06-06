@@ -31,17 +31,8 @@ class MagazineTocModel @Inject constructor(
     private val _state = MutableStateFlow(MagazineTocState())
     val state = _state.asStateFlow()
 
-    // Identifies which source the current state corresponds to. Without
-    // this the activity-scoped VM would happily serve the first issue's
-    // TOC for every subsequent open, since `_state.value.issue != null`
-    // alone can't tell whether the cached issue matches the new request.
     private var loadedKey: String? = null
 
-    /**
-     * Library mode — resolves the book by id and locates its ePub through
-     * SAF-based [FileProvider]. Persists `currentArticleHref` for the
-     * "highlight last-read" feature.
-     */
     fun loadFromLibrary(bookId: Int) {
         val key = "lib:$bookId"
         if (loadedKey == key && _state.value.issue != null) return
@@ -53,9 +44,7 @@ class MagazineTocModel @Inject constructor(
                 _state.update { it.copy(isLoading = false, errorMessage = "Book #$bookId not found") }
                 return@launch
             }
-            val rawFile = withContext(Dispatchers.IO) {
-                fileProvider.getFileFromBook(book).getOrNull()?.rawFile
-            }
+            val rawFile = withContext(Dispatchers.IO) { resolveFile(book.filePath) }
             if (rawFile == null) {
                 _state.update { it.copy(isLoading = false, errorMessage = "Could not access ePub file.") }
                 return@launch
@@ -64,11 +53,6 @@ class MagazineTocModel @Inject constructor(
         }
     }
 
-    /**
-     * Direct mode — opens an ePub already living in the app's filesDir
-     * (e.g. one that arrived via the system's "Open with" sheet). No
-     * library entry, no last-read tracking.
-     */
     fun loadFromPath(epubPath: String) {
         val key = "path:$epubPath"
         if (loadedKey == key && _state.value.issue != null) return
@@ -82,6 +66,14 @@ class MagazineTocModel @Inject constructor(
             }
             parseAndPublish(rawFile, currentArticleHref = null)
         }
+    }
+
+    private fun resolveFile(filePath: String): File? {
+        val file = File(filePath)
+        if (file.exists() && file.canRead()) return file
+        return fileProvider.getFileFromBook(
+            ua.acclorite.book_story.domain.model.library.Book.default.copy(filePath = filePath)
+        ).getOrNull()?.rawFile
     }
 
     private suspend fun parseAndPublish(rawFile: File, currentArticleHref: String?) {
