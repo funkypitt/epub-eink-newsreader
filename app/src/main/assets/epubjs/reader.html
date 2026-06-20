@@ -79,6 +79,37 @@ function notify(name, payload) {
   } catch (_) {}
 }
 
+// Normalise a chapter's source text into well-formed XHTML so the
+// strict XML parser epub.js uses never bails out to its error page.
+//
+// 1. A targeted fix for the Economist's broken drop-cap markup, run
+//    first so the styled initial keeps rendering correctly (the generic
+//    pass below would otherwise treat the stray "<" as literal text and
+//    drop the styling).
+// 2. A generic round-trip through the browser's lenient HTML5 parser,
+//    re-serialised as XML. This closes unclosed tags, fixes mismatched
+//    nesting, escapes stray "<" / "&", and self-closes void elements —
+//    covering every malformed-markup variant, not just known patterns.
+//
+// If anything in the generic pass throws or yields nothing usable, we
+// fall back to the lightly-repaired text rather than risk a blank page.
+function repairChapterXhtml(text) {
+  text = text.replace(
+    /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
+    "<span class=\"drop-cap\">$1</span>"
+  );
+  try {
+    var htmlDoc = new DOMParser().parseFromString(text, "text/html");
+    if (htmlDoc && htmlDoc.documentElement) {
+      var xml = new XMLSerializer().serializeToString(htmlDoc);
+      if (xml && xml.indexOf("<html") !== -1) return xml;
+    }
+  } catch (e) {
+    trace("repairChapterXhtml.threw", e && (e.message || e));
+  }
+  return text;
+}
+
 function loadBook(base64Data, href) {
   bookReady = false;
   pendingFontSize = 0;
@@ -97,9 +128,13 @@ function loadBook(base64Data, href) {
     book = ePub(bytes.buffer);
 
     // Repair producer-side HTML defects before each chapter is parsed
-    // as XHTML (which fails on the Economist's malformed drop-caps and
-    // unclosed <img> tags). archive.getText is the entry point epub.js
-    // calls for every chapter's source text.
+    // as XHTML. epub.js feeds the returned text straight to
+    // parseFromString(..., "application/xhtml+xml"), whose strict XML
+    // parser renders a "StartTag: invalid element name" error page for
+    // any malformed markup (stray "<" in text, unclosed/mismatched tags,
+    // bad void elements). The Economist and several other magazines ship
+    // such defects. archive.getText is the entry point epub.js calls for
+    // every chapter's source text.
     if (book.archive) {
       var origGetText = book.archive.getText.bind(book.archive);
       book.archive.getText = function (path, encoding) {
@@ -107,18 +142,7 @@ function loadBook(base64Data, href) {
         if (!/\.x?html?$/i.test(path || "")) return result;
         return Promise.resolve(result).then(function (text) {
           if (typeof text !== "string") return text;
-          text = text.replace(
-            /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
-            "<span class=\"drop-cap\">$1</span>"
-          );
-          text = text.replace(
-            /<(img|br|hr|input|source|wbr)([^>]*)>/g,
-            function (m, tag, attrs) {
-              if (attrs.trimEnd().endsWith("/")) return m;
-              return "<" + tag + attrs + " />";
-            }
-          );
-          return text;
+          return repairChapterXhtml(text);
         });
       };
     }
