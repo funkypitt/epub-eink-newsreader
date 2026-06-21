@@ -244,46 +244,41 @@ function setupPagination() {
 
   var html = doc.documentElement;
   var body = doc.body;
-
-  html.style.setProperty("overflow", "hidden", "important");
-  html.style.setProperty("height", vh + "px", "important");
-  html.style.setProperty("margin", "0", "important");
-
-  // Column layout on <body>.  overflow:auto forces WebView to render
-  // every column (overflow:hidden + column-fill:auto caused it to
-  // skip columns far from the viewport on earlier Android versions).
-  body.style.setProperty("height", vh + "px", "important");
-  body.style.setProperty("max-height", vh + "px", "important");
-  body.style.setProperty("margin", "0", "important");
-  body.style.setProperty("padding", PAD + "px", "important");
-  body.style.setProperty("box-sizing", "border-box", "important");
-  body.style.setProperty("overflow", "auto", "important");
-  body.style.setProperty("column-width", colW + "px", "important");
-  body.style.setProperty("column-gap", GAP + "px", "important");
-  body.style.setProperty("column-fill", "auto", "important");
-  body.style.setProperty("scrollbar-width", "none", "important");
-  // Prevent descender/ascender clipping at column boundaries (Readium technique)
-  body.style.setProperty("-webkit-line-box-contain", "block glyphs replaced", "important");
-
-  // Fragmentation rules + scrollbar hide + hard size caps on media.
-  //
-  // The media caps use explicit pixels (colW × colH), NOT max-width:100%.
-  // Inside a multicol container the percentage base for a replaced
-  // element is the multicol content box, not a single column, so on Blink
-  // an image can render wider than one column. A column is always at least
-  // as wide as its widest unbreakable child, so one over-wide image widens
-  // EVERY column, pushing the real pitch past vw — then scrolling by vw
-  // under-scrolls and bleeds the next column's left edge plus a white gap
-  // onto the right side of the page. Pinning max-width to colW px makes
-  // that impossible. max-height (colH) keeps a tall image inside a single
-  // column instead of overflowing it.
   var colH = vh - 2 * PAD;
+
+  // ALL geometry lives in an injected stylesheet with !important — NOT in
+  // inline element styles. epub.js manages the body's own padding in
+  // scrolled-doc mode and re-writes body.style.padding AFTER our setup on
+  // some chapters (a race), which silently clobbered the inline padding we
+  // used to set here. With the wrong padding (e.g. epub's "0 36.9167px")
+  // the body content box shrinks below colW, Blink lays out narrower
+  // columns, the real pitch drops below vw, and scrolling by vw over-shoots
+  // — leaking a white gap plus a sliver of the next column onto the right
+  // edge (and over-hanging hero images). A stylesheet !important rule beats
+  // epub.js's inline non-important writes regardless of order, so our
+  // geometry can no longer be clobbered. width:vw pins the content box to
+  // exactly colW so the rendered column pitch is always vw.
+  //
+  // The media caps use explicit pixels (colW × colH), NOT max-width:100%:
+  // inside a multicol container the percentage base for a replaced element
+  // is the multicol content box, not a single column, so an image could
+  // otherwise render wider than one column. max-height keeps a tall image
+  // inside a single column instead of overflowing it.
   var id = "mr-col-css";
   var prev = doc.getElementById(id);
   if (prev) prev.remove();
   var s = doc.createElement("style");
   s.id = id;
   s.textContent =
+    "html { overflow: hidden !important; height: " + vh + "px !important; margin: 0 !important; }\n" +
+    "body {" +
+      " width: " + vw + "px !important;" +
+      " height: " + vh + "px !important; max-height: " + vh + "px !important;" +
+      " margin: 0 !important; padding: " + PAD + "px !important;" +
+      " box-sizing: border-box !important; overflow: auto !important;" +
+      " column-width: " + colW + "px !important; column-gap: " + GAP + "px !important;" +
+      " column-fill: auto !important; scrollbar-width: none !important;" +
+      " -webkit-line-box-contain: block glyphs replaced !important; }\n" +
     "body::-webkit-scrollbar { display: none !important; }\n" +
     "* { orphans: 2 !important; widows: 2 !important; }\n" +
     "h1, h2, h3, h4, h5, h6 { break-after: avoid !important; }\n" +

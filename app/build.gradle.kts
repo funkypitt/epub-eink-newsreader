@@ -18,8 +18,8 @@ android {
         applicationId = "ua.acclorite.book_story"
         minSdk = 26
         targetSdk = 36
-        versionCode = 29
-        versionName = "0.2.14-magazine"
+        versionCode = 30
+        versionName = "0.2.15-magazine"
 
         vectorDrawables {
             useSupportLibrary = true
