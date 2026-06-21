@@ -280,17 +280,22 @@ function setupPagination() {
   doc.head.appendChild(s);
 
   colBody = body;
+  // The column pitch is exactly vw by construction: colW = vw - GAP and
+  // column-gap = GAP, so each column's left edge sits at k*vw. The scroll
+  // step is therefore always vw — never interpolated from scrollWidth.
+  // Deriving the step from scrollWidth (as a previous version did) drifts
+  // off the column boundary whenever scrollWidth isn't an exact multiple
+  // of vw (sub-pixel rounding, a non-breaking wide image/table, or a
+  // not-yet-settled layout), which leaks a sliver of the next column plus
+  // a white gap onto the right edge of the page.
   pageW = vw;
   curPage = 0;
   body.scrollLeft = 0;
 
-  // After layout settles, derive pageW from actual scrollWidth so the
-  // scroll step matches the browser's real column pitch exactly.
   requestAnimationFrame(function () {
     requestAnimationFrame(function () {
       var sw = body.scrollWidth;
       var pages = Math.max(1, Math.round(sw / vw));
-      if (sw > vw) pageW = sw / pages;
       trace("paginate", "vw=" + vw + " vh=" + vh + " pad=" + PAD +
         " pages=" + pages + " pageW=" + pageW + " scrollW=" + sw);
     });
@@ -299,19 +304,18 @@ function setupPagination() {
 
 function goNext() {
   if (!colBody || pageW < 1) return;
-  var sw = colBody.scrollWidth;
-  var pages = Math.max(1, Math.round(sw / pageW));
+  // Count pages from a live scrollWidth read (handles late reflow from
+  // image/font loading), but scroll to the exact column boundary.
+  var pages = Math.max(1, Math.round(colBody.scrollWidth / pageW));
   if (curPage >= pages - 1) return;
   curPage++;
-  colBody.scrollLeft = Math.round(curPage * sw / pages);
+  colBody.scrollLeft = curPage * pageW;
 }
 
 function goPrev() {
   if (!colBody || curPage <= 0) return;
   curPage--;
-  var sw = colBody.scrollWidth;
-  var pages = Math.max(1, Math.round(sw / pageW));
-  colBody.scrollLeft = Math.round(curPage * sw / pages);
+  colBody.scrollLeft = curPage * pageW;
 }
 
 function goToHref(href) {
