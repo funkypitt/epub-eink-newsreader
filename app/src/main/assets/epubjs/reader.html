@@ -265,7 +265,19 @@ function setupPagination() {
   // Prevent descender/ascender clipping at column boundaries (Readium technique)
   body.style.setProperty("-webkit-line-box-contain", "block glyphs replaced", "important");
 
-  // Fragmentation rules + scrollbar hide
+  // Fragmentation rules + scrollbar hide + hard size caps on media.
+  //
+  // The media caps use explicit pixels (colW × colH), NOT max-width:100%.
+  // Inside a multicol container the percentage base for a replaced
+  // element is the multicol content box, not a single column, so on Blink
+  // an image can render wider than one column. A column is always at least
+  // as wide as its widest unbreakable child, so one over-wide image widens
+  // EVERY column, pushing the real pitch past vw — then scrolling by vw
+  // under-scrolls and bleeds the next column's left edge plus a white gap
+  // onto the right side of the page. Pinning max-width to colW px makes
+  // that impossible. max-height (colH) keeps a tall image inside a single
+  // column instead of overflowing it.
+  var colH = vh - 2 * PAD;
   var id = "mr-col-css";
   var prev = doc.getElementById(id);
   if (prev) prev.remove();
@@ -276,7 +288,14 @@ function setupPagination() {
     "* { orphans: 2 !important; widows: 2 !important; }\n" +
     "h1, h2, h3, h4, h5, h6 { break-after: avoid !important; }\n" +
     "h1, h2, h3, h4, h5, h6, img, figure, table, pre, blockquote { break-inside: avoid !important; }\n" +
-    "img, figure, video { max-width: 100% !important; height: auto !important; break-inside: avoid !important; }\n";
+    "img, svg, video, picture, object, canvas {" +
+      " max-width: " + colW + "px !important;" +
+      " max-height: " + colH + "px !important;" +
+      " height: auto !important; }\n" +
+    "figure { max-width: " + colW + "px !important;" +
+      " margin-left: 0 !important; margin-right: 0 !important; }\n" +
+    "table, pre { max-width: " + colW + "px !important; }\n" +
+    "pre { white-space: pre-wrap !important; word-wrap: break-word !important; }\n";
   doc.head.appendChild(s);
 
   colBody = body;
