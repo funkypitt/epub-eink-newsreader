@@ -79,6 +79,7 @@ fun MagazineArticleContent(
                         chapterHref = state.article.contentHref,
                         textZoomPercent = textZoom,
                         onTapCenter = { chromeVisible = !chromeVisible },
+                        onPastEnd = onNext,
                     )
                 else -> CenteredText("No content.")
             }
@@ -134,6 +135,7 @@ private fun EpubJsArticleView(
     chapterHref: String,
     textZoomPercent: Int,
     onTapCenter: () -> Unit,
+    onPastEnd: () -> Unit,
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
@@ -268,7 +270,14 @@ private fun EpubJsArticleView(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                    ) { webView?.evaluateJavascript("goNext();", null) }
+                    ) {
+                        // goNext() returns "end" when already on the last page;
+                        // in that case open the next article so the magazine
+                        // reads back-to-back without reaching for the arrows.
+                        webView?.evaluateJavascript("goNext();") { result ->
+                            if (result == "\"end\"") onPastEnd()
+                        }
+                    }
             )
         }
     }

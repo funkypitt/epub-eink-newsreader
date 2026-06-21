@@ -317,13 +317,20 @@ function setupPagination() {
 }
 
 function goNext() {
-  if (!colBody || pageW < 1) return;
+  // The return value tells the Kotlin tap handler what happened:
+  //   "advanced" – turned to the next page within this article
+  //   "end"      – already on the last page; host should open the next
+  //                article (first page) so reading flows back-to-back
+  //   "notready" – pagination not set up yet; ignore the tap rather than
+  //                skip an article
+  if (!colBody || pageW < 1) return "notready";
   // Count pages from a live scrollWidth read (handles late reflow from
   // image/font loading), but scroll to the exact column boundary.
   var pages = Math.max(1, Math.round(colBody.scrollWidth / pageW));
-  if (curPage >= pages - 1) return;
+  if (curPage >= pages - 1) return "end";
   curPage++;
   colBody.scrollLeft = curPage * pageW;
+  return "advanced";
 }
 
 function goPrev() {
