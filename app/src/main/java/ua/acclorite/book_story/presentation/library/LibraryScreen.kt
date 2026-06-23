@@ -24,6 +24,7 @@ import ua.acclorite.book_story.presentation.navigator.Screen
 import ua.acclorite.book_story.ui.common.helpers.LocalSettings
 import ua.acclorite.book_story.ui.library.LibraryContent
 import ua.acclorite.book_story.ui.library.LibraryEffects
+import java.io.File
 
 @Parcelize
 object LibraryScreen : Screen, Parcelable {
@@ -47,10 +48,24 @@ object LibraryScreen : Screen, Parcelable {
 
         val sortedBooks = remember(state.value.books, sortOrder, sortOrderDescending) {
             derivedStateOf {
+                // Precompute file modification times once so the comparator
+                // does not touch the filesystem on every comparison.
+                val lastModifiedByPath: Map<String, Long> =
+                    if (sortOrder == LibrarySortOrder.LAST_MODIFIED) {
+                        state.value.books
+                            .map { it.data.filePath }
+                            .distinct()
+                            .associateWith { path -> File(path).lastModified() }
+                    } else {
+                        emptyMap()
+                    }
+
                 state.value.books.sortedWith(
                     compareByWithOrder(sortOrderDescending) { book ->
                         when (sortOrder) {
                             LibrarySortOrder.NAME -> book.data.title.trim()
+                            LibrarySortOrder.LAST_MODIFIED ->
+                                lastModifiedByPath[book.data.filePath] ?: 0L
                             LibrarySortOrder.LAST_READ -> book.data.lastOpened
                             LibrarySortOrder.PROGRESS -> book.data.progress
                             LibrarySortOrder.AUTHOR -> book.data.author.getAsString()

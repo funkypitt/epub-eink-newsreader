@@ -129,9 +129,9 @@ class SettingsManager @Inject constructor(
         key = booleanPreferencesKey("library_show_book_count"), default = true
     )
     val librarySortOrder = setting<LibrarySortOrder, String>(
-        // NAME descending = reverse-chronological for date-prefixed filenames
-        // (e.g. 2026-04-25-economist.epub) — newspapers land newest-first.
-        key = stringPreferencesKey("library_sort_order"), default = LibrarySortOrder.NAME,
+        // LAST_MODIFIED descending = newest file first, the natural order for
+        // a feed of newspapers/magazines dropped into the library.
+        key = stringPreferencesKey("library_sort_order"), default = LibrarySortOrder.LAST_MODIFIED,
         serialize = { it.name }, deserialize = { LibrarySortOrder.valueOf(it) }
     )
     val librarySortOrderDescending = setting<Boolean, Boolean>(

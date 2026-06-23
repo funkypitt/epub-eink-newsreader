@@ -9,6 +9,7 @@ package ua.acclorite.book_story.presentation.library.model
 
 enum class LibrarySortOrder {
     NAME,
+    LAST_MODIFIED,
     LAST_READ,
     PROGRESS,
     AUTHOR
