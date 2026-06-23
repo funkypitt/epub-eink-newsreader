@@ -50,6 +50,7 @@ fun LibraryScaffold(
     search: (LibraryEvent.OnSearch) -> Unit,
     selectBooks: (LibraryEvent.OnSelectBooks) -> Unit,
     clearSelectedBooks: (LibraryEvent.OnClearSelectedBooks) -> Unit,
+    showSortBottomSheet: (LibraryEvent.OnShowSortBottomSheet) -> Unit,
     showDeleteDialog: (LibraryEvent.OnShowDeleteDialog) -> Unit,
     navigateToBrowse: (LibraryEvent.OnNavigateToBrowse) -> Unit,
     navigateToBookInfo: (LibraryEvent.OnNavigateToBookInfo) -> Unit,
@@ -78,6 +79,7 @@ fun LibraryScaffold(
                 search = search,
                 selectBooks = selectBooks,
                 clearSelectedBooks = clearSelectedBooks,
+                showSortBottomSheet = showSortBottomSheet,
                 showDeleteDialog = showDeleteDialog,
             )
         }

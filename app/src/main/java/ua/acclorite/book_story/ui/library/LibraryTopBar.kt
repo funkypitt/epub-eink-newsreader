@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
@@ -59,6 +60,7 @@ fun LibraryTopBar(
     search: (LibraryEvent.OnSearch) -> Unit,
     selectBooks: (LibraryEvent.OnSelectBooks) -> Unit,
     clearSelectedBooks: (LibraryEvent.OnClearSelectedBooks) -> Unit,
+    showSortBottomSheet: (LibraryEvent.OnShowSortBottomSheet) -> Unit,
     showDeleteDialog: (LibraryEvent.OnShowDeleteDialog) -> Unit,
 ) {
     TopAppBar(
@@ -105,6 +107,13 @@ fun LibraryTopBar(
                         disableOnClick = true,
                     ) {
                         searchVisibility(LibraryEvent.OnSearchVisibility(true))
+                    }
+                    IconButton(
+                        icon = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = R.string.sort_order_content_desc,
+                        disableOnClick = false,
+                    ) {
+                        showSortBottomSheet(LibraryEvent.OnShowSortBottomSheet)
                     }
                     NavigatorIconButton()
                 }

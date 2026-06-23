@@ -39,6 +39,8 @@ sealed class LibraryEvent {
         val books: List<SelectableBook>
     ) : LibraryEvent()
 
+    data object OnShowSortBottomSheet : LibraryEvent()
+
     data object OnShowDeleteDialog : LibraryEvent()
 
     data object OnActionDeleteDialog : LibraryEvent()

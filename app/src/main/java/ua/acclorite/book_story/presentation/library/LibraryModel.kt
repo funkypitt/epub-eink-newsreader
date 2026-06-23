@@ -207,6 +207,14 @@ class LibraryModel @Inject constructor(
                     }
                 }
 
+                is LibraryEvent.OnShowSortBottomSheet -> {
+                    _state.update {
+                        it.copy(
+                            dialog = LibraryScreen.SORT_BOTTOM_SHEET
+                        )
+                    }
+                }
+
                 is LibraryEvent.OnShowDeleteDialog -> {
                     _state.update {
                         it.copy(

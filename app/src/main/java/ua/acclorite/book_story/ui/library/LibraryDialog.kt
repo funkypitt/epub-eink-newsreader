@@ -26,5 +26,11 @@ fun LibraryDialog(
                 dismissDialog = dismissDialog
             )
         }
+
+        LibraryScreen.SORT_BOTTOM_SHEET -> {
+            LibrarySortBottomSheet(
+                dismissDialog = dismissDialog
+            )
+        }
     }
 }

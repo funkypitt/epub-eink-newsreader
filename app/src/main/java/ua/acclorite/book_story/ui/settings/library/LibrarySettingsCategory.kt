@@ -10,11 +10,9 @@ package ua.acclorite.book_story.ui.settings.library
 
 import androidx.compose.foundation.lazy.LazyListScope
 import ua.acclorite.book_story.ui.settings.library.display.LibraryDisplaySubcategory
-import ua.acclorite.book_story.ui.settings.library.sort.LibrarySortSubcategory
 
 fun LazyListScope.LibrarySettingsCategory() {
-    LibrarySortSubcategory(
+    LibraryDisplaySubcategory(
         showDivider = false
     )
-    LibraryDisplaySubcategory()
 }

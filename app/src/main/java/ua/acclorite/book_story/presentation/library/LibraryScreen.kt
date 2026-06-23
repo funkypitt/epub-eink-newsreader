@@ -33,6 +33,9 @@ object LibraryScreen : Screen, Parcelable {
     const val DELETE_DIALOG = "delete_dialog"
 
     @IgnoredOnParcel
+    const val SORT_BOTTOM_SHEET = "sort_bottom_sheet"
+
+    @IgnoredOnParcel
     val refreshListChannel: Channel<Long> = Channel(Channel.CONFLATED)
 
     @OptIn(ExperimentalMaterialApi::class)
@@ -120,6 +123,7 @@ object LibraryScreen : Screen, Parcelable {
             search = screenModel::onEvent,
             selectBooks = screenModel::onEvent,
             clearSelectedBooks = screenModel::onEvent,
+            showSortBottomSheet = screenModel::onEvent,
             actionDeleteDialog = screenModel::onEvent,
             showDeleteDialog = screenModel::onEvent,
             dismissDialog = screenModel::onEvent,
