@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
 import ua.acclorite.book_story.R
+import ua.acclorite.book_story.core.helpers.stripMarkup
 import ua.acclorite.book_story.core.log.logE
 import ua.acclorite.book_story.core.ui.UIText
 import ua.acclorite.book_story.data.model.file.CachedFile
@@ -41,11 +42,12 @@ class EpubFileParser @Inject constructor() : FileParser {
                         .use { it.readText() }
                     val document = Jsoup.parse(opfContent, Parser.xmlParser())
 
-                    val title = document.select("metadata > dc|title").text().trim().run {
-                        ifBlank {
-                            cachedFile.name.substringBeforeLast(".").trim()
+                    val title = document.select("metadata > dc|title").text()
+                        .stripMarkup().trim().run {
+                            ifBlank {
+                                cachedFile.name.substringBeforeLast(".").trim()
+                            }
                         }
-                    }
 
                     val author = document.select("metadata > dc|creator").text().trim().run {
                         if (isBlank()) {

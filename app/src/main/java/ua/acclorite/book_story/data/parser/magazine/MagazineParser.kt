@@ -9,6 +9,7 @@ package ua.acclorite.book_story.data.parser.magazine
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.parser.Parser
+import ua.acclorite.book_story.core.helpers.stripMarkup
 import ua.acclorite.book_story.core.log.logE
 import java.io.File
 import java.time.LocalDate
@@ -71,8 +72,8 @@ class MagazineParser @Inject constructor() {
         val ctx = readEpubContext(zip) ?: return null
         val mode = detect(zip)
 
-        val title = ctx.opf.select("metadata > dc|title").text().trim()
-        val publisher = ctx.opf.select("metadata > dc|publisher").text().trim()
+        val title = ctx.opf.select("metadata > dc|title").text().stripMarkup().trim()
+        val publisher = ctx.opf.select("metadata > dc|publisher").text().stripMarkup().trim()
         val language = ctx.opf.select("metadata > dc|language").text().trim()
         val date = parseDate(ctx.opf.select("metadata > dc|date").text().trim())
 
@@ -109,9 +110,9 @@ class MagazineParser @Inject constructor() {
         return rows.mapNotNull { a ->
             val href = a.attr("href").substringBefore('#').trim()
             if (href.isBlank()) return@mapNotNull null
-            val title = a.selectFirst("span.toc-title")?.text()?.trim().orEmpty()
-            val category = a.selectFirst("span.toc-cat")?.text()?.trim().orEmpty()
-            val author = a.selectFirst("span.toc-author")?.text()?.trim()?.takeUnless { it.isBlank() }
+            val title = a.selectFirst("span.toc-title")?.text()?.stripMarkup()?.trim().orEmpty()
+            val category = a.selectFirst("span.toc-cat")?.text()?.stripMarkup()?.trim().orEmpty()
+            val author = a.selectFirst("span.toc-author")?.text()?.stripMarkup()?.trim()?.takeUnless { it.isBlank() }
             if (title.isBlank() || category.isBlank()) return@mapNotNull null
 
             val (lead, cover) = readChapterMeta(zip, ctx, href)
@@ -130,11 +131,11 @@ class MagazineParser @Inject constructor() {
 
     private fun parseFromContent(zip: ZipFile, ctx: EpubContext): List<MagazineArticle> {
         return ctx.contentChapters(zip).mapIndexedNotNull { _, (item, doc) ->
-            val title = doc.selectFirst("h1")?.text()?.trim().orEmpty()
-            val category = doc.selectFirst("p.category")?.text()?.trim().orEmpty()
+            val title = doc.selectFirst("h1")?.text()?.stripMarkup()?.trim().orEmpty()
+            val category = doc.selectFirst("p.category")?.text()?.stripMarkup()?.trim().orEmpty()
             if (title.isBlank() || category.isBlank()) return@mapIndexedNotNull null
-            val author = doc.selectFirst("p.author")?.text()?.trim()?.takeUnless { it.isBlank() }
-            val lead = doc.selectFirst("p.lead")?.text()?.trim()?.takeUnless { it.isBlank() }
+            val author = doc.selectFirst("p.author")?.text()?.stripMarkup()?.trim()?.takeUnless { it.isBlank() }
+            val lead = doc.selectFirst("p.lead")?.text()?.stripMarkup()?.trim()?.takeUnless { it.isBlank() }
             val cover = extractCoverImage(doc)
             MagazineArticle(
                 spineIndex = ctx.spineHrefs.indexOf(item.href),
@@ -150,8 +151,8 @@ class MagazineParser @Inject constructor() {
 
     private fun parseGenericEpub(zip: ZipFile, ctx: EpubContext): List<MagazineArticle> {
         val navTitles = extractNavTitles(zip, ctx)
-        val publisher = ctx.opf.select("metadata > dc|publisher").text().trim()
-        val bookTitle = ctx.opf.select("metadata > dc|title").text().trim()
+        val publisher = ctx.opf.select("metadata > dc|publisher").text().stripMarkup().trim()
+        val bookTitle = ctx.opf.select("metadata > dc|title").text().stripMarkup().trim()
         val category = publisher.ifBlank { bookTitle }.ifBlank { "Book" }
         return ctx.spineHrefs.mapIndexedNotNull { idx, href ->
             val item = ctx.manifest.values.firstOrNull { it.href == href } ?: return@mapIndexedNotNull null
@@ -180,7 +181,7 @@ class MagazineParser @Inject constructor() {
         val map = mutableMapOf<String, String>()
         for (a in nav.select("li > a")) {
             val href = a.attr("href").substringBefore('#').trim()
-            val text = a.text().trim()
+            val text = a.text().stripMarkup().trim()
             if (href.isNotBlank() && text.isNotBlank()) map[href] = text
         }
         return map
@@ -189,7 +190,7 @@ class MagazineParser @Inject constructor() {
     private fun readChapterTitle(zip: ZipFile, ctx: EpubContext, href: String): String? {
         val text = ctx.readResource(zip, href) ?: return null
         val doc = Jsoup.parse(text, Parser.xmlParser())
-        return doc.selectFirst("h1, h2, h3, title")?.text()?.trim()?.takeIf { it.isNotBlank() }
+        return doc.selectFirst("h1, h2, h3, title")?.text()?.stripMarkup()?.trim()?.takeIf { it.isNotBlank() }
     }
 
     private fun readChapterCover(zip: ZipFile, ctx: EpubContext, href: String): String? {
@@ -205,7 +206,7 @@ class MagazineParser @Inject constructor() {
     ): Pair<String?, String?> {
         val text = ctx.readResource(zip, href) ?: return null to null
         val doc = Jsoup.parse(text, Parser.xmlParser())
-        val lead = doc.selectFirst("p.lead")?.text()?.trim()?.takeUnless { it.isBlank() }
+        val lead = doc.selectFirst("p.lead")?.text()?.stripMarkup()?.trim()?.takeUnless { it.isBlank() }
         val cover = extractCoverImage(doc)
         return lead to cover
     }
