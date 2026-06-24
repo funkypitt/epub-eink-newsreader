@@ -101,6 +101,21 @@ function repairChapterXhtml(text) {
   try {
     var htmlDoc = new DOMParser().parseFromString(text, "text/html");
     if (htmlDoc && htmlDoc.documentElement) {
+      // Some producers double-escape inline markup inside a heading, e.g.
+      // <h1>The &lt;em&gt;Economist&lt;/em&gt;</h1>. The escaped tags survive
+      // as literal text and render verbatim as the title at the top of the
+      // article. If a heading's text still carries tag-like markup, re-parse
+      // that text as HTML so the tags are interpreted (and thus hidden)
+      // instead of shown. Scoped to headings only — body text (code samples,
+      // quotes) may legitimately contain escaped "<tags>" that must stay.
+      var headTag = /<\/?(em|i|b|strong|span|sub|sup|u|small|mark)\b[^>]*>/i;
+      var heads = htmlDoc.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      for (var h = 0; h < heads.length; h++) {
+        var head = heads[h];
+        if (headTag.test(head.textContent)) {
+          head.innerHTML = head.textContent;
+        }
+      }
       var xml = new XMLSerializer().serializeToString(htmlDoc);
       if (xml && xml.indexOf("<html") !== -1) return xml;
     }
