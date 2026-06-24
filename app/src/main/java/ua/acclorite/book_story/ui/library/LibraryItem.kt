@@ -17,10 +17,8 @@ fun LibraryItem(
     layout: LibraryLayout,
     hasSelectedItems: Boolean,
     titlePosition: LibraryTitlePosition,
-    readButton: Boolean,
     showProgress: Boolean,
     selectBook: (select: Boolean?) -> Unit,
-    navigateToBookInfo: () -> Unit,
     navigateToReader: () -> Unit
 ) {
     when (layout) {
@@ -28,10 +26,8 @@ fun LibraryItem(
             LibraryListItem(
                 book = book,
                 hasSelectedItems = hasSelectedItems,
-                readButton = readButton,
                 showProgress = showProgress,
                 selectBook = selectBook,
-                navigateToBookInfo = navigateToBookInfo,
                 navigateToReader = navigateToReader
             )
         }
@@ -41,10 +37,8 @@ fun LibraryItem(
                 book = book,
                 hasSelectedItems = hasSelectedItems,
                 titlePosition = titlePosition,
-                readButton = readButton,
                 showProgress = showProgress,
                 selectBook = selectBook,
-                navigateToBookInfo = navigateToBookInfo,
                 navigateToReader = navigateToReader
             )
         }

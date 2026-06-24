@@ -17,7 +17,6 @@ import ua.acclorite.book_story.R
 import ua.acclorite.book_story.ui.settings.components.SettingsSubcategory
 import ua.acclorite.book_story.ui.settings.library.display.components.LibraryGridSizeOption
 import ua.acclorite.book_story.ui.settings.library.display.components.LibraryLayoutOption
-import ua.acclorite.book_story.ui.settings.library.display.components.LibraryReadButtonOption
 import ua.acclorite.book_story.ui.settings.library.display.components.LibraryShowProgressOption
 import ua.acclorite.book_story.ui.settings.library.display.components.LibraryTitlePositionOption
 
@@ -43,10 +42,6 @@ fun LazyListScope.LibraryDisplaySubcategory(
 
         item {
             LibraryTitlePositionOption()
-        }
-
-        item {
-            LibraryReadButtonOption()
         }
 
         item {

@@ -101,7 +101,6 @@ object LibraryScreen : Screen, Parcelable {
             selectedItemsCount = state.value.selectedItemsCount,
             hasSelectedItems = state.value.hasSelectedItems,
             titlePosition = settings.libraryTitlePosition.value,
-            readButton = settings.libraryShowReadButton.value,
             showProgress = settings.libraryShowProgress.value,
             showBookCount = settings.libraryShowBookCount.value,
             showSearch = state.value.showSearch,
@@ -129,7 +128,6 @@ object LibraryScreen : Screen, Parcelable {
             dismissDialog = screenModel::onEvent,
             navigateToBrowse = screenModel::onEvent,
             navigateToReader = screenModel::onEvent,
-            navigateToBookInfo = screenModel::onEvent,
         )
     }
 }

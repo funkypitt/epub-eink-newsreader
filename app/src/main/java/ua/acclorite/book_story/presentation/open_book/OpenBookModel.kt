@@ -6,15 +6,9 @@
 
 package ua.acclorite.book_story.presentation.open_book
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.acclorite.book_story.data.parser.magazine.MagazineParser
 import ua.acclorite.book_story.domain.service.FileProvider
@@ -30,38 +24,29 @@ sealed class OpenBookTarget {
 
 @HiltViewModel
 class OpenBookModel @Inject constructor(
-    private val application: Application,
     private val getBook: GetBookUseCase,
     private val fileProvider: FileProvider,
     private val magazineParser: MagazineParser,
 ) : ViewModel() {
 
-    private val _target = MutableSharedFlow<OpenBookTarget>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
-    val target = _target.asSharedFlow()
-
-    private var lastDecidedBookId: Int? = null
-
-    fun decide(bookId: Int) {
-        if (lastDecidedBookId == bookId) return
-        lastDecidedBookId = bookId
-        viewModelScope.launch {
-            val book = getBook(bookId)
-            val isMagazine = book?.let {
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        val rawFile = resolveFile(it.filePath) ?: return@runCatching false
-                        magazineParser.canParse(rawFile)
-                    }.getOrDefault(false)
-                }
-            } ?: false
-            _target.tryEmit(
-                if (isMagazine) OpenBookTarget.Magazine(bookId)
-                else OpenBookTarget.Unsupported(bookId)
-            )
-        }
+    /**
+     * Resolves the target for [bookId]. Stateless on purpose: this ViewModel
+     * is scoped to the Activity (the navigator provides no per-screen
+     * ViewModelStoreOwner), so any cached/replayed state would leak between
+     * successive opens and route a later book to a previously opened one.
+     */
+    suspend fun decide(bookId: Int): OpenBookTarget {
+        val book = getBook(bookId)
+        val isMagazine = book?.let {
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val rawFile = resolveFile(it.filePath) ?: return@runCatching false
+                    magazineParser.canParse(rawFile)
+                }.getOrDefault(false)
+            }
+        } ?: false
+        return if (isMagazine) OpenBookTarget.Magazine(bookId)
+        else OpenBookTarget.Unsupported(bookId)
     }
 
     private fun resolveFile(filePath: String): File? {

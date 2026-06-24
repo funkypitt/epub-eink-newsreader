@@ -30,7 +30,6 @@ fun LibraryScaffold(
     selectedItemsCount: Int,
     hasSelectedItems: Boolean,
     titlePosition: LibraryTitlePosition,
-    readButton: Boolean,
     showProgress: Boolean,
     showBookCount: Boolean,
     showSearch: Boolean,
@@ -53,7 +52,6 @@ fun LibraryScaffold(
     showSortBottomSheet: (LibraryEvent.OnShowSortBottomSheet) -> Unit,
     showDeleteDialog: (LibraryEvent.OnShowDeleteDialog) -> Unit,
     navigateToBrowse: (LibraryEvent.OnNavigateToBrowse) -> Unit,
-    navigateToBookInfo: (LibraryEvent.OnNavigateToBookInfo) -> Unit,
     navigateToReader: (LibraryEvent.OnNavigateToReader) -> Unit,
 ) {
     Scaffold(
@@ -101,20 +99,12 @@ fun LibraryScaffold(
                         layout = layout,
                         hasSelectedItems = hasSelectedItems,
                         titlePosition = titlePosition,
-                        readButton = readButton,
                         showProgress = showProgress,
                         selectBook = { select ->
                             selectBook(
                                 LibraryEvent.OnSelectBook(
                                     id = book.data.id,
                                     select = select
-                                )
-                            )
-                        },
-                        navigateToBookInfo = {
-                            navigateToBookInfo(
-                                LibraryEvent.OnNavigateToBookInfo(
-                                    book.data.id
                                 )
                             )
                         },

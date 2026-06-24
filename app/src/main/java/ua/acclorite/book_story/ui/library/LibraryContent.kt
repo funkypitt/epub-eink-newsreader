@@ -23,7 +23,6 @@ fun LibraryContent(
     selectedItemsCount: Int,
     hasSelectedItems: Boolean,
     titlePosition: LibraryTitlePosition,
-    readButton: Boolean,
     showProgress: Boolean,
     showBookCount: Boolean,
     showSearch: Boolean,
@@ -50,7 +49,6 @@ fun LibraryContent(
     actionDeleteDialog: (LibraryEvent.OnActionDeleteDialog) -> Unit,
     dismissDialog: (LibraryEvent.OnDismissDialog) -> Unit,
     navigateToBrowse: (LibraryEvent.OnNavigateToBrowse) -> Unit,
-    navigateToBookInfo: (LibraryEvent.OnNavigateToBookInfo) -> Unit,
     navigateToReader: (LibraryEvent.OnNavigateToReader) -> Unit,
 ) {
     LibraryDialog(
@@ -65,7 +63,6 @@ fun LibraryContent(
         selectedItemsCount = selectedItemsCount,
         hasSelectedItems = hasSelectedItems,
         titlePosition = titlePosition,
-        readButton = readButton,
         showProgress = showProgress,
         showBookCount = showBookCount,
         showSearch = showSearch,
@@ -88,7 +85,6 @@ fun LibraryContent(
         showDeleteDialog = showDeleteDialog,
         refreshState = refreshState,
         navigateToBrowse = navigateToBrowse,
-        navigateToBookInfo = navigateToBookInfo,
         navigateToReader = navigateToReader
     )
 

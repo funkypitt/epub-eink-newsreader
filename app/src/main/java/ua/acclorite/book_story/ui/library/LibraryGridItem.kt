@@ -22,10 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -50,10 +47,8 @@ fun LibraryGridItem(
     book: SelectableBook,
     hasSelectedItems: Boolean,
     titlePosition: LibraryTitlePosition,
-    readButton: Boolean,
     showProgress: Boolean,
     selectBook: (select: Boolean?) -> Unit,
-    navigateToBookInfo: () -> Unit,
     navigateToReader: () -> Unit
 ) {
     val backgroundColor = if (book.selected) MaterialTheme.colorScheme.secondary
@@ -86,7 +81,7 @@ fun LibraryGridItem(
                 .combinedClickable(
                     onClick = {
                         if (hasSelectedItems) selectBook(null)
-                        else navigateToBookInfo()
+                        else navigateToReader()
                     },
                     onLongClick = {
                         if (!hasSelectedItems) selectBook(true)
@@ -159,26 +154,6 @@ fun LibraryGridItem(
                     )
 
                     Spacer(modifier = Modifier.width(6.dp))
-                }
-
-                if (readButton) {
-                    FilledIconButton(
-                        onClick = {
-                            if (readButton) navigateToReader()
-                        },
-                        modifier = Modifier.size(32.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = stringResource(id = R.string.continue_reading_content_desc),
-                            Modifier.size(20.dp)
-                        )
-                    }
                 }
             }
         }

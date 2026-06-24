@@ -36,24 +36,21 @@ data class OpenBookScreen(val bookId: Int) : Screen, Parcelable {
         val context = LocalContext.current
         val model = hiltViewModel<OpenBookModel>()
 
-        LaunchedEffect(bookId) { model.decide(bookId) }
-        LaunchedEffect(model) {
-            model.target.collect { target ->
-                when (target) {
-                    is OpenBookTarget.Magazine -> {
-                        navigator.push(
-                            targetScreen = MagazineTocScreen(bookId = target.bookId),
-                            saveInBackStack = false,
-                        )
-                    }
-                    is OpenBookTarget.Unsupported -> {
-                        Toast.makeText(
-                            context,
-                            "This ePub is not a supported magazine",
-                            Toast.LENGTH_LONG,
-                        ).show()
-                        navigator.pop()
-                    }
+        LaunchedEffect(bookId) {
+            when (val target = model.decide(bookId)) {
+                is OpenBookTarget.Magazine -> {
+                    navigator.push(
+                        targetScreen = MagazineTocScreen(bookId = target.bookId),
+                        saveInBackStack = false,
+                    )
+                }
+                is OpenBookTarget.Unsupported -> {
+                    Toast.makeText(
+                        context,
+                        "This ePub is not a supported magazine",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                    navigator.pop()
                 }
             }
         }

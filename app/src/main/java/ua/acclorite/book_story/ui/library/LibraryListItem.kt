@@ -19,10 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -42,10 +39,8 @@ import ua.acclorite.book_story.ui.common.components.common.StyledText
 fun LibraryListItem(
     book: SelectableBook,
     hasSelectedItems: Boolean,
-    readButton: Boolean,
     showProgress: Boolean,
     selectBook: (select: Boolean?) -> Unit,
-    navigateToBookInfo: () -> Unit,
     navigateToReader: () -> Unit
 ) {
     val backgroundColor = if (book.selected) MaterialTheme.colorScheme.secondaryContainer
@@ -66,7 +61,7 @@ fun LibraryListItem(
             .combinedClickable(
                 onClick = {
                     if (hasSelectedItems) selectBook(null)
-                    else navigateToBookInfo()
+                    else navigateToReader()
                 },
                 onLongClick = {
                     if (!hasSelectedItems) selectBook(true)
@@ -127,26 +122,6 @@ fun LibraryListItem(
                     color = MaterialTheme.colorScheme.onTertiary
                 )
             )
-        }
-
-        if (readButton) {
-            Spacer(modifier = Modifier.width(8.dp))
-
-            FilledIconButton(
-                onClick = { if (readButton) navigateToReader() },
-                modifier = Modifier.size(32.dp),
-                shape = MaterialTheme.shapes.medium,
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = stringResource(id = R.string.continue_reading_content_desc),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
     }
 }
