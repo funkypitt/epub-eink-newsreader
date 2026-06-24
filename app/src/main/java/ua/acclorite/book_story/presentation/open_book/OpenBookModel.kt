@@ -18,7 +18,16 @@ import javax.inject.Inject
 
 sealed class OpenBookTarget {
     abstract val bookId: Int
-    data class Magazine(override val bookId: Int) : OpenBookTarget()
+
+    /**
+     * @param resumeArticleHref the last article the user was reading, or null
+     * to land on the table of contents.
+     */
+    data class Magazine(
+        override val bookId: Int,
+        val resumeArticleHref: String? = null,
+    ) : OpenBookTarget()
+
     data class Unsupported(override val bookId: Int) : OpenBookTarget()
 }
 
@@ -45,8 +54,10 @@ class OpenBookModel @Inject constructor(
                 }.getOrDefault(false)
             }
         } ?: false
-        return if (isMagazine) OpenBookTarget.Magazine(bookId)
-        else OpenBookTarget.Unsupported(bookId)
+        return if (isMagazine) OpenBookTarget.Magazine(
+            bookId = bookId,
+            resumeArticleHref = book?.currentArticleHref?.takeUnless { it.isBlank() },
+        ) else OpenBookTarget.Unsupported(bookId)
     }
 
     private fun resolveFile(filePath: String): File? {

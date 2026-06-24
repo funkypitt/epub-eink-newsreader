@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.parcelize.Parcelize
+import ua.acclorite.book_story.presentation.magazine.MagazineArticleScreen
 import ua.acclorite.book_story.presentation.magazine.MagazineTocScreen
 import ua.acclorite.book_story.presentation.navigator.Screen
 import ua.acclorite.book_story.ui.navigator.LocalNavigator
@@ -25,7 +26,9 @@ import ua.acclorite.book_story.ui.navigator.LocalNavigator
 /**
  * Transient dispatcher screen: pushes [MagazineTocScreen] when the underlying ePub
  * looks like a supported magazine, otherwise shows a toast and pops back to the
- * previous screen. There is no fallback reader in this build.
+ * previous screen. If the issue has a last-read article, resumes straight into it
+ * with the table of contents kept underneath so the TOC button still works. There
+ * is no fallback reader in this build.
  */
 @Parcelize
 data class OpenBookScreen(val bookId: Int) : Screen, Parcelable {
@@ -43,6 +46,14 @@ data class OpenBookScreen(val bookId: Int) : Screen, Parcelable {
                         targetScreen = MagazineTocScreen(bookId = target.bookId),
                         saveInBackStack = false,
                     )
+                    target.resumeArticleHref?.let { href ->
+                        navigator.push(
+                            targetScreen = MagazineArticleScreen(
+                                bookId = target.bookId,
+                                articleHref = href,
+                            ),
+                        )
+                    }
                 }
                 is OpenBookTarget.Unsupported -> {
                     Toast.makeText(
