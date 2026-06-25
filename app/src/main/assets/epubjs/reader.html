@@ -86,7 +86,10 @@ function notify(name, payload) {
 //    first so the styled initial keeps rendering correctly (the generic
 //    pass below would otherwise treat the stray "<" as literal text and
 //    drop the styling).
-// 2. A generic round-trip through the browser's lenient HTML5 parser,
+// 2. A generalised fix for the same producer bug when the drop-cap logic
+//    ate the "<" of an inline tag that wraps more than one character
+//    (e.g. a whole byline in <em>), leaving "em>...</em>" as literal text.
+// 3. A generic round-trip through the browser's lenient HTML5 parser,
 //    re-serialised as XML. This closes unclosed tags, fixes mismatched
 //    nesting, escapes stray "<" / "&", and self-closes void elements —
 //    covering every malformed-markup variant, not just known patterns.
@@ -97,6 +100,15 @@ function repairChapterXhtml(text) {
   text = text.replace(
     /<span class="drop-cap"><<\/span>b>([A-Za-z])<\/b>/g,
     "<span class=\"drop-cap\">$1</span>"
+  );
+  // The YouTube-summary epubs apply the drop-cap to the first character of
+  // the paragraph's raw HTML, which is the "<" of an opening <em> tag:
+  //   <p class="first"><span class="drop-cap"><</span>em>By-line…</em></p>
+  // That leaves the literal "em>" showing at the top of the article. Restore
+  // the eaten "<" (dropping the broken drop-cap) so the tag is interpreted.
+  text = text.replace(
+    /<span class="drop-cap"><<\/span>([a-zA-Z][a-zA-Z0-9]*)>/g,
+    "<$1>"
   );
   try {
     var htmlDoc = new DOMParser().parseFromString(text, "text/html");
