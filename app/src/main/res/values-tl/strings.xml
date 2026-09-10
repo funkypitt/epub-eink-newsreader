@@ -17,4 +17,5 @@
     <string name="add_books_description">Pwede ka mamili kung anong mga libro ang gusto mong idagdag. Pwede mong baguhin ang Pamagat at ang Imahe ng pabalat mamaya. Maaaring umabot ng ilang minuto ang proseso.</string>
     <string name="error_no_browser">Walang nahanap na browser app.</string>
     <string name="categories_empty">Walang kategorya.</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

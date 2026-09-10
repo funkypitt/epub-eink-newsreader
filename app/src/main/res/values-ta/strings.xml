@@ -242,4 +242,5 @@
     <string name="selected_content_desc">தேர்ந்தெடுக்கப்பட்டது</string>
     <string name="app_icon_content_desc">பயன்பாட்டு படவுரு</string>
     <string name="history_content_desc">படித்தல் வரலாறு</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

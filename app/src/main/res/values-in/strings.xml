@@ -8,4 +8,5 @@
     <string name="library_screen">Perpustakaan</string>
     <string name="browse_screen">Jelajahi</string>
     <string name="settings_screen">Pengaturan</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

@@ -355,4 +355,5 @@
     <string name="collapse_content_desc">Sbalit</string>
     <string name="remove_content_desc">Odstranit</string>
     <string name="note_content_desc">Poznámka</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

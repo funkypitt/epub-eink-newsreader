@@ -40,4 +40,5 @@
     <string name="error_no_share_app">Nem található megosztó alkalmazás.</string>
     <string name="error_no_file_manager_app">Nem található alkalmazás a mappa kiválasztásához.</string>
     <string name="error_could_not_get_text">A fájl üres, hiányzik, vagy nem elérhető. Ellenőrizd a fájlt, a beolvasási beállításokat, vagy módosítsd az elérési utat, majd próbáld újra.</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

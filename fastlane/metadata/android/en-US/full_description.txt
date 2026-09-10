@@ -1,0 +1,9 @@
+ePub Magazine reader (Magazine Reader) is an ePub reader for e-ink tablets, made to read daily newspapers and magazines delivered as ePub issues.
+
+Issues are grouped by magazine; tapping a magazine opens its latest issue and resumes the last-read article. New issues can be fetched from a WebDAV folder, so a daily pipeline can drop the day's papers on a server and the tablet picks them up.
+
+The reader is a fork of Book's Story by Acclorite, a free and open-source Material You eBook reader built with Jetpack Compose, adapted for periodicals and e-paper screens.
+
+Based on Book's Story by Acclorite, GPL-3.0-only.
+
+Pierre Gallaz · developed with Claude Code

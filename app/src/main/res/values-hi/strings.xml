@@ -192,4 +192,5 @@
     <string name="unknown">अज्ञात</string>
     <string name="report_bug_option">एक बग रिपोर्ट करो</string>
     <string name="credits_updates">नए अपडेट का प्रबंधन</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

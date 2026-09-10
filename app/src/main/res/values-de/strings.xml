@@ -355,4 +355,5 @@
     <string name="show_navigation_labels_option_desc">Navigationsleistenbeschriftungen unter den Symbolen anzeigen</string>
     <string name="horizontal_gesture_disable_scrolling_option">Scrollen deaktivieren</string>
     <string name="horizontal_gesture_disable_scrolling_option_desc">Scrollen im Reader vollständig deaktivieren</string>
+    <string name="credits">Pierre Gallaz · entwickelt mit Claude Code</string>
 </resources>

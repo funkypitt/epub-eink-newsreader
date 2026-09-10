@@ -353,4 +353,5 @@
     <string name="show_navigation_labels_option">Mostrar rótulos de navegação</string>
     <string name="show_navigation_labels_option_desc">Mostrar rótulos embaixo dos ícones na barra de navegação</string>
     <string name="select_all_books_content_desc">Selecionar todos os livros</string>
+    <string name="credits">Pierre Gallaz · desenvolvido com Claude Code</string>
 </resources>

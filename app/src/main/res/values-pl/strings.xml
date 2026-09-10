@@ -320,4 +320,5 @@
     <string name="crash_title">Ups! Aplikacja się zawiesiła.</string>
     <string name="crash_description">Proszę zgłosić ten komunikat o awarii w najwygodniejszy dla siebie sposób.</string>
     <string name="select_all_books_content_desc">Wybierz wszystkie książki</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

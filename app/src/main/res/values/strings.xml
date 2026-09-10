@@ -528,5 +528,6 @@
     <string name="sync_success">Sync complete: %1$d new, %2$d skipped</string>
     <string name="sync_failed">Sync failed: %1$s</string>
     <string name="sync_credentials_missing">Configure WebDAV URL, username and password first</string>
-
+    <string name="based_on_upstream" translatable="false">Based on Book\'s Story by Acclorite</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

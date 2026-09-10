@@ -353,4 +353,5 @@
     <string name="library_per_category_sort_option_note">El método de clasificación se puede cambiar en la libreria.</string>
     <string name="show_navigation_labels_option">Mostrar etiquetas de navegación</string>
     <string name="show_navigation_labels_option_desc">Mostrar etiquetación de navegación bajo los iconos</string>
+    <string name="credits">Pierre Gallaz · desarrollado con Claude Code</string>
 </resources>

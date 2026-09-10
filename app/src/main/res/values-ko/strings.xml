@@ -10,4 +10,5 @@
     <string name="history_screen">기록</string>
     <string name="browse_screen">검색</string>
     <string name="settings_screen">설정</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

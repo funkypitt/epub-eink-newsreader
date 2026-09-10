@@ -29,4 +29,5 @@
     <string name="error_no_share_app">Δεν βρέθηκε εφαρμογή μοιρασμού.</string>
     <string name="error_no_file_manager_app">Δεν βρέθηκε εφαρμογή επιλογής φακέλου.</string>
     <string name="error_could_not_get_text">Το αρχείο είναι άδιο, λείπει ή μη προσβάσιμο. Επαληθεύστε το αρχείο, τις ρυθμήσεις εύρεσης ή αλλάξτε το μονοπάτι και δοκιμάστε ξανά.</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

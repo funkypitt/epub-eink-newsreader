@@ -184,3 +184,13 @@ You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
   </pre>
 </div>
+
+## Crédits / Credits
+
+Basé sur / Based on [Book's Story](https://github.com/Acclorite/book-story) by Acclorite, GPL-3.0-only. Voir / see `NOTICE.md`.
+
+© 2026 Pierre Gallaz. Développé avec [Claude Code](https://claude.com/claude-code) (Anthropic).
+Licence GPL-3.0, voir `LICENSE`.
+
+© 2026 Pierre Gallaz. Developed with [Claude Code](https://claude.com/claude-code) (Anthropic).
+GPL-3.0 licence, see `LICENSE`.

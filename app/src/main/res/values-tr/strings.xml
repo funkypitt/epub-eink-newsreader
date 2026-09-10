@@ -427,4 +427,5 @@
     <string name="show_navigation_labels_option_desc">Simgelerin altında gezinme çubuğu etiketlerini göster</string>
     <string name="horizontal_gesture_disable_scrolling_option">Kaydırmayı devre dışı bırak</string>
     <string name="horizontal_gesture_disable_scrolling_option_desc">Okuyucu kaydırmayı tamamen devre dışı bırakın</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

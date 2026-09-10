@@ -87,6 +87,14 @@ fun AboutLayout(
 
         item {
             AboutItem(
+                title = stringResource(id = R.string.based_on_upstream),
+                description = stringResource(id = R.string.credits),
+                isOnClickEnabled = false
+            )
+        }
+
+        item {
+            AboutItem(
                 title = stringResource(id = R.string.report_bug_option),
                 description = null
             ) {

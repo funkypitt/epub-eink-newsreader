@@ -279,4 +279,5 @@
     <string name="show_more_content_desc">表示を増やす</string>
     <string name="expand_content_desc">拡大する</string>
     <string name="note_content_desc">備考</string>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
 </resources>

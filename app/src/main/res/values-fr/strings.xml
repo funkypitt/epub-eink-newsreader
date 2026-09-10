@@ -351,4 +351,5 @@
     <string name="crash_description">Veuillez signaler ce message de crash de la manière la plus pratique pour vous.</string>
     <string name="library_per_category_sort_option_note">Le tri peut être changé dans la Bibliothèque.</string>
     <string name="select_all_books_content_desc">Sélectionner tous les livres</string>
+    <string name="credits">Pierre Gallaz · développé avec Claude Code</string>
 </resources>

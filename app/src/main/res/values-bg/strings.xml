@@ -4,4 +4,6 @@
   ~ SPDX-License-Identifier: GPL-3.0-only
   -->
 
-<resources></resources>
+<resources>
+    <string name="credits">Pierre Gallaz · developed with Claude Code</string>
+</resources>
