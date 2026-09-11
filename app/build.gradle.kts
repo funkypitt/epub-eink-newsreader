@@ -15,11 +15,11 @@ android {
 
     // Default configuration
     defaultConfig {
-        applicationId = "ua.acclorite.book_story"
+        applicationId = "com.freedomfighter.magazinereader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 38
-        versionName = "0.2.23-magazine"
+        versionCode = 39
+        versionName = "0.2.24-magazine"
 
         vectorDrawables {
             useSupportLibrary = true
