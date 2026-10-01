@@ -12,6 +12,7 @@ import androidx.compose.runtime.Immutable
 sealed class LibraryEffect {
     data object OnRequestFocus : LibraryEffect()
     data object OnBooksDeleted : LibraryEffect()
+    data class OnSyncFailed(val message: String) : LibraryEffect()
     data object OnNavigateToBrowse : LibraryEffect()
     data class OnNavigateToBookInfo(val id: Int) : LibraryEffect()
     data class OnNavigateToReader(val id: Int) : LibraryEffect()

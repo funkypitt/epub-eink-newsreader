@@ -11,6 +11,8 @@ import ua.acclorite.book_story.presentation.library.model.SelectableBook
 
 @Immutable
 sealed class LibraryEvent {
+    data object OnPullToRefresh : LibraryEvent()
+
     data class OnRefreshList(
         val loading: Boolean,
         val hideSearch: Boolean

@@ -19,10 +19,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import ua.acclorite.book_story.data.worker.KDriveAutoSync
 import ua.acclorite.book_story.domain.use_case.book.DeleteBookUseCase
 import ua.acclorite.book_story.domain.use_case.book.SearchBooksUseCase
 import ua.acclorite.book_story.presentation.browse.BrowseScreen
@@ -33,7 +35,8 @@ import kotlin.coroutines.coroutineContext
 @HiltViewModel
 class LibraryModel @Inject constructor(
     private val searchBooksUseCase: SearchBooksUseCase,
-    private val deleteBookUseCase: DeleteBookUseCase
+    private val deleteBookUseCase: DeleteBookUseCase,
+    private val autoSync: KDriveAutoSync,
 ) : ViewModel() {
 
     private val mutex = Mutex()
@@ -65,6 +68,13 @@ class LibraryModel @Inject constructor(
             }
         }
         /* - - - - - - - - - - - - - - - - - - - */
+
+        viewModelScope.launch {
+            autoSync.isSyncing.collect { syncing -> _state.update { it.copy(isSyncing = syncing) } }
+        }
+        viewModelScope.launch {
+            autoSync.failures.collect { _effects.emit(LibraryEffect.OnSyncFailed(it)) }
+        }
     }
 
     private var refreshJob: Job? = null
@@ -73,6 +83,11 @@ class LibraryModel @Inject constructor(
     fun onEvent(event: LibraryEvent) {
         viewModelScope.launch {
             when (event) {
+                is LibraryEvent.OnPullToRefresh -> {
+                    autoSync.onPullToRefresh()
+                    onEvent(LibraryEvent.OnRefreshList(loading = false, hideSearch = true))
+                }
+
                 is LibraryEvent.OnRefreshList -> {
                     refreshJob?.cancel()
                     refreshJob = viewModelScope.launch(Dispatchers.Default) {

@@ -29,6 +29,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import ua.acclorite.book_story.R
 import ua.acclorite.book_story.data.settings.SettingsManager
+import ua.acclorite.book_story.data.worker.KDriveAutoSync
 import ua.acclorite.book_story.presentation.browse.BrowseModel
 import ua.acclorite.book_story.presentation.browse.BrowseScreen
 import ua.acclorite.book_story.presentation.library.LibraryModel
@@ -58,6 +59,9 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var settings: SettingsManager
+
+    @Inject
+    lateinit var autoSync: KDriveAutoSync
     private val settingsModel: SettingsModel by viewModels()
 
     companion object {
@@ -223,6 +227,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        autoSync.onAppOpened()
     }
 
     override fun onDestroy() {

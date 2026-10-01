@@ -36,6 +36,11 @@ fun LibraryEffects(effects: SharedFlow<LibraryEffect>, focusRequester: FocusRequ
                         .showToast(context = context)
                 }
 
+                is LibraryEffect.OnSyncFailed -> {
+                    context.getString(R.string.sync_failed, effect.message)
+                        .showToast(context = context)
+                }
+
                 is LibraryEffect.OnNavigateToBrowse -> {
                     navigator.push(BrowseScreen)
                 }

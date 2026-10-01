@@ -18,8 +18,8 @@ android {
         applicationId = "com.freedomfighter.magazinereader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 39
-        versionName = "0.2.24-magazine"
+        versionCode = 40
+        versionName = "0.2.25-magazine"
 
         vectorDrawables {
             useSupportLibrary = true

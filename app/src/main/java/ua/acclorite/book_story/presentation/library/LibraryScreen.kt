@@ -80,15 +80,8 @@ object LibraryScreen : Screen, Parcelable {
 
         val focusRequester = remember { FocusRequester() }
         val refreshState = rememberPullRefreshState(
-            refreshing = state.value.isRefreshing,
-            onRefresh = {
-                screenModel.onEvent(
-                    LibraryEvent.OnRefreshList(
-                        loading = false,
-                        hideSearch = true
-                    )
-                )
-            }
+            refreshing = state.value.isRefreshing || state.value.isSyncing,
+            onRefresh = { screenModel.onEvent(LibraryEvent.OnPullToRefresh) }
         )
 
         LibraryEffects(

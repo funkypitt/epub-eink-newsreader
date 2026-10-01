@@ -16,6 +16,7 @@ data class LibraryState(
 
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
+    val isSyncing: Boolean = false,
 
     val selectedItemsCount: Int = 0,
     val hasSelectedItems: Boolean = false,

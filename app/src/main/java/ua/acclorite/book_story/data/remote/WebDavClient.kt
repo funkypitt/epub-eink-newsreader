@@ -132,10 +132,13 @@ class WebDavClient @Inject constructor() {
 
             val name = displayName
                 ?: href.trimEnd('/').substringAfterLast('/')
-            val fullUrl = if (href.startsWith("http")) href
-            else baseUrl.trimEnd('/').substringBefore(
-                java.net.URI(baseUrl).path
-            ) + href
+            // href is absolute or server-relative ("/remote.php/…", "/file.epub").
+            // A server sending it unencoded (spaces…) gets the plain host + href.
+            val fullUrl = runCatching { java.net.URI(baseUrl).resolve(href).toString() }
+                .getOrElse {
+                    if (href.startsWith("http")) href
+                    else java.net.URI(baseUrl).let { "${it.scheme}://${it.rawAuthority}" } + href
+                }
 
             if (fullUrl.trimEnd('/') == baseUrl.trimEnd('/')) return@mapNotNull null
 
