@@ -23,8 +23,10 @@ import kotlinx.coroutines.launch
 import ua.acclorite.book_story.core.data.CoreData
 import ua.acclorite.book_story.core.language.Language
 import ua.acclorite.book_story.core.language.LanguageUtils
+import ua.acclorite.book_story.core.log.logE
 import ua.acclorite.book_story.core.log.logI
 import ua.acclorite.book_story.data.local.data_store.DataStore
+import ua.acclorite.book_story.data.security.SecretCipher
 import ua.acclorite.book_story.data.settings.model.Setting
 import ua.acclorite.book_story.presentation.browse.model.BrowseLayout
 import ua.acclorite.book_story.presentation.browse.model.BrowseSortOrder
@@ -45,7 +47,8 @@ private const val TAG = "SettingsManager"
 @Suppress("UNCHECKED_CAST")
 @Singleton
 class SettingsManager @Inject constructor(
-    private val dataStore: DataStore
+    private val dataStore: DataStore,
+    private val secretCipher: SecretCipher
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -179,7 +182,31 @@ class SettingsManager @Inject constructor(
         key = stringPreferencesKey("kdrive_sync_username"), default = ""
     )
     val kdriveSyncPassword = setting<String, String>(
-        key = stringPreferencesKey("kdrive_sync_password"), default = ""
+        // Kept encrypted with a key of the Android Keystore. A password that
+        // cannot be encrypted is not written at all, one that cannot be
+        // decrypted reads as empty: it is never stored in clear.
+        key = stringPreferencesKey("kdrive_sync_password_encrypted"), default = "",
+        serialize = { clear ->
+            runCatching { secretCipher.encrypt(clear) }.getOrElse {
+                logE(TAG, "Could not encrypt the sync password: ${it.javaClass.simpleName}.")
+                ""
+            }
+        },
+        deserialize = { stored ->
+            runCatching { secretCipher.decrypt(stored) }.getOrElse {
+                logE(TAG, "Could not decrypt the sync password: ${it.javaClass.simpleName}.")
+                ""
+            }
+        },
+        // Earlier versions kept the password in clear under this key.
+        beforeInit = { key ->
+            migrateClearSecret(
+                dataStore = dataStore,
+                cipher = secretCipher,
+                clearKey = stringPreferencesKey("kdrive_sync_password"),
+                encryptedKey = key
+            )
+        }
     )
     val kdriveSyncIntervalHours = setting<Int, Int>(
         key = intPreferencesKey("kdrive_sync_interval_hours"), default = 6
@@ -195,7 +222,8 @@ class SettingsManager @Inject constructor(
         key: Preferences.Key<P>,
         default: T,
         serialize: (T) -> P = { it as P },
-        deserialize: (P) -> T = { it as T }
+        deserialize: (P) -> T = { it as T },
+        beforeInit: suspend (Preferences.Key<P>) -> Unit = {}
     ): Setting<T, P> {
         settingsCount.incrementAndGet()
 
@@ -212,6 +240,7 @@ class SettingsManager @Inject constructor(
             deserialize = deserialize
         ).also { setting ->
             scope.launch {
+                beforeInit(key)
                 setting.init(dataStore.getNullableData<P>(key))
                 logI(TAG, "Successfully initialized setting: [${key.name}].")
                 initializeSetting()

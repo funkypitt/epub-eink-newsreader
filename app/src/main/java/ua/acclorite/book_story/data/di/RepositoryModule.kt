@@ -24,6 +24,8 @@ import ua.acclorite.book_story.data.repository.BookRepositoryImpl
 import ua.acclorite.book_story.data.repository.FileSystemRepositoryImpl
 import ua.acclorite.book_story.data.repository.PermissionRepositoryImpl
 import ua.acclorite.book_story.data.repository.SyncRepositoryImpl
+import ua.acclorite.book_story.data.security.KeystoreCipher
+import ua.acclorite.book_story.data.security.SecretCipher
 import ua.acclorite.book_story.domain.repository.BookRepository
 import ua.acclorite.book_story.domain.repository.FileSystemRepository
 import ua.acclorite.book_story.domain.repository.PermissionRepository
@@ -38,6 +40,11 @@ abstract class RepositoryModule {
     abstract fun bindDataStore(
         dataStoreImpl: DataStoreImpl
     ): DataStore
+
+    @Binds
+    abstract fun bindSecretCipher(
+        keystoreCipher: KeystoreCipher
+    ): SecretCipher
 
     @Binds
     @Singleton

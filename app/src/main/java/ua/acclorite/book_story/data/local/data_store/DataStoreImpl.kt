@@ -32,4 +32,10 @@ class DataStoreImpl @Inject constructor(context: Application) : DataStore {
             preferences[key] = value
         }
     }
+
+    override suspend fun <T> removeData(key: Preferences.Key<T>) {
+        dataStore.edit { preferences ->
+            preferences.remove(key)
+        }
+    }
 }

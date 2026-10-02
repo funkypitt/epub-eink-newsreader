@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import ua.acclorite.book_story.BuildConfig
 import ua.acclorite.book_story.presentation.magazine.MagazineArticleState
 import java.io.File
 
@@ -158,10 +159,11 @@ private fun EpubJsArticleView(
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                // Enable Chrome DevTools remote debugging — connect the
-                // device by USB then open chrome://inspect/#devices in
-                // Chrome on the host to step through the live WebView.
-                WebView.setWebContentsDebuggingEnabled(true)
+                // Chrome DevTools remote debugging, in debug builds only —
+                // connect the device by USB then open
+                // chrome://inspect/#devices in Chrome on the host to step
+                // through the live WebView.
+                WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = false
