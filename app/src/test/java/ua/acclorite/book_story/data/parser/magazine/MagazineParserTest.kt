@@ -104,10 +104,10 @@ class MagazineParserTest {
         }
     }
 
-    // --- canParse on synthetic counter-example ---
+    // --- an ordinary book, and a file that is no ePub ---
 
     @Test
-    fun `canParse returns false on a generic ePub without toc-cat`() {
+    fun `a generic ePub without toc-cat opens with one article per chapter`() {
         val tmp = File.createTempFile("plain-fiction", ".epub")
         tmp.deleteOnExit()
         writeMinimalEpub(
@@ -123,6 +123,21 @@ class MagazineParserTest {
                 "ch2.xhtml" to "<html><body><p>The end.</p></body></html>",
             ),
         )
+        assertTrue(parser.canParse(tmp))
+        val issue = parser.parse(tmp)
+        assertNotNull(issue)
+        val articles = issue!!.sections.flatMap { it.articles }
+        assertEquals(listOf("Chapter 1", "Chapter 2"), articles.map { it.title })
+        assertEquals(listOf("ch1.xhtml", "ch2.xhtml"), articles.map { it.contentHref.substringAfterLast('/') })
+        // no category in the book: every chapter is filed under one and the same heading
+        assertEquals(1, issue.sections.size)
+    }
+
+    @Test
+    fun `canParse returns false on a file that is not an ePub`() {
+        val tmp = File.createTempFile("not-a-book", ".epub")
+        tmp.deleteOnExit()
+        tmp.writeText("%PDF-1.4 this is not a zip archive")
         assertFalse(parser.canParse(tmp))
         assertNull(parser.parse(tmp))
     }

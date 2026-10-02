@@ -25,8 +25,9 @@ private const val TAG = "MagazineParser"
  * fixtures (NZZ, 24heures, Courrier, Economist) all share the same OEBPS layout
  * and the same `toc-cat` / `toc-title` / `toc-author` markup convention.
  *
- * `canParse` is fast: it stops at signature A (nav-structured) when possible
- * and only falls back to a full chapter scan if the nav looks unconventional.
+ * Any other valid ePub (an ordinary book) is read too: one article per chapter,
+ * all under one heading (see `parseGenericEpub`). So `canParse` is true for
+ * every file that is a readable ePub, and false for anything else.
  */
 class MagazineParser @Inject constructor() {
 
@@ -41,7 +42,7 @@ class MagazineParser @Inject constructor() {
     }
 
     private fun openZip(file: File): ZipFile? =
-        if (file.exists() && file.canRead()) ZipFile(file) else null
+        if (file.exists() && file.canRead()) runCatching { ZipFile(file) }.getOrNull() else null   // not a zip: not an ePub
 
     // --- Detection ---
 

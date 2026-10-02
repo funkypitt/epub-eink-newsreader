@@ -3,19 +3,21 @@
 Reads the day's newspapers and magazines delivered as EPUB — by Calibre's news recipes or a
 generator of your own. An issue opens as a contents page, one card per article by section,
 then each article on its own page, with previous / contents / next always on top. Pages, not
-scrolling: made for e-ink. Ordinary books open as in
-[Book's Story](https://github.com/Acclorite/book-story), which it forks.
+scrolling: made for e-ink. An ordinary book opens the same way, one card per chapter.
+A fork of [Book's Story](https://github.com/Acclorite/book-story).
 
 ## Key points
 
-* An EPUB whose layout is an issue (title page, contents, one chapter per article) opens in
-  magazine mode by itself; any other EPUB opens as an ordinary book.
+* An EPUB whose layout is an issue (title page, contents, one chapter per article) opens with
+  its sections and articles; any other EPUB opens the same way, one card per chapter under a
+  single heading. Other formats are not read.
 * The contents are paginated to the screen: category, title and, when the issue has one, the
   article's picture. Tap a card to read; the header goes to the previous article, the
   contents, the next.
 * New issues can be fetched from a WebDAV folder (kDrive, Nextcloud…): settings → sync. Files
   already on the phone are skipped.
-* Everything else — library, fonts, themes, tap zones — is Book's Story's.
+* The library, the themes and the settings come from Book's Story; the reading screen is this
+  app's own.
 * It installs beside Book's Story under its own id, `com.freedomfighter.magazinereader`
   (builds before 0.2.24 used another id and must be uninstalled by hand).
 
