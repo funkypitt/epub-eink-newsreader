@@ -27,6 +27,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -65,17 +66,23 @@ fun MagazineTocContent(
 ) {
     val context = LocalContext.current
 
-    androidx.compose.foundation.layout.Column(
-        modifier = Modifier.fillMaxSize().safeDrawingPadding()
+    // Surface (not a plain background modifier) so LocalContentColor is
+    // onSurface — otherwise unstyled Text defaults to black and the article
+    // titles vanish on a dark theme.
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.surface,
     ) {
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            TocBody(state, context, onArticleClick, onHome)
+        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                TocBody(state, context, onArticleClick, onHome)
+            }
+            MagazineFooterBar(
+                onDecrease = null,        // no body text to scale on the TOC
+                onAppHome = onAppHome,
+                onIncrease = null,
+            )
         }
-        MagazineFooterBar(
-            onDecrease = null,        // no body text to scale on the TOC
-            onAppHome = onAppHome,
-            onIncrease = null,
-        )
     }
 }
 

@@ -25,6 +25,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,53 +56,59 @@ fun MagazineFooterBar(
     centerLabel: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(MagazineFooterHeight)
-            .background(MaterialTheme.colorScheme.surfaceContainer),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        FooterZone(
-            icon = Icons.Filled.Remove,
-            contentDescription = "Smaller text",
-            enabled = onDecrease != null && decreaseEnabled,
-            onClick = { onDecrease?.invoke() },
-            modifier = Modifier.weight(1f),
-        )
-        VerticalDivider()
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clickable(onClick = onAppHome),
-            contentAlignment = Alignment.Center,
+    // The bar paints its own surfaceContainer background, so pin the content
+    // colour to match — the inherited LocalContentColor may be the default
+    // black (e.g. under a Navigator background modifier or the white article
+    // page), which is invisible on a dark theme.
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(MagazineFooterHeight)
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (centerLabel != null) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+            FooterZone(
+                icon = Icons.Filled.Remove,
+                contentDescription = "Smaller text",
+                enabled = onDecrease != null && decreaseEnabled,
+                onClick = { onDecrease?.invoke() },
+                modifier = Modifier.weight(1f),
+            )
+            VerticalDivider()
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clickable(onClick = onAppHome),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (centerLabel != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Home, contentDescription = "App home")
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = centerLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
                     Icon(Icons.Filled.Home, contentDescription = "App home")
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = centerLabel,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
-            } else {
-                Icon(Icons.Filled.Home, contentDescription = "App home")
             }
+            VerticalDivider()
+            FooterZone(
+                icon = Icons.Filled.Add,
+                contentDescription = "Bigger text",
+                enabled = onIncrease != null && increaseEnabled,
+                onClick = { onIncrease?.invoke() },
+                modifier = Modifier.weight(1f),
+            )
         }
-        VerticalDivider()
-        FooterZone(
-            icon = Icons.Filled.Add,
-            contentDescription = "Bigger text",
-            enabled = onIncrease != null && increaseEnabled,
-            onClick = { onIncrease?.invoke() },
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 

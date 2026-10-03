@@ -26,6 +26,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -54,37 +55,43 @@ fun MagazineHeaderBar(
     centerText: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(MagazineHeaderHeight)
-            .background(MaterialTheme.colorScheme.surfaceContainer),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        HeaderZone(
-            icon = Icons.Filled.ChevronLeft,
-            contentDescription = "Previous",
-            enabled = prevEnabled,
-            onClick = onPrev,
-            modifier = Modifier.weight(1f),
-        )
-        VerticalDivider()
-        HeaderZone(
-            icon = Icons.AutoMirrored.Filled.Toc,
-            contentDescription = "Table of contents",
-            enabled = homeEnabled,
-            onClick = onHome,
-            modifier = Modifier.weight(1f),
-            label = centerText,
-        )
-        VerticalDivider()
-        HeaderZone(
-            icon = Icons.Filled.ChevronRight,
-            contentDescription = "Next",
-            enabled = nextEnabled,
-            onClick = onNext,
-            modifier = Modifier.weight(1f),
-        )
+    // The bar paints its own surfaceContainer background, so pin the content
+    // colour to match — the inherited LocalContentColor may be the default
+    // black (e.g. under a Navigator background modifier or the white article
+    // page), which is invisible on a dark theme.
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(MagazineHeaderHeight)
+                .background(MaterialTheme.colorScheme.surfaceContainer),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HeaderZone(
+                icon = Icons.Filled.ChevronLeft,
+                contentDescription = "Previous",
+                enabled = prevEnabled,
+                onClick = onPrev,
+                modifier = Modifier.weight(1f),
+            )
+            VerticalDivider()
+            HeaderZone(
+                icon = Icons.AutoMirrored.Filled.Toc,
+                contentDescription = "Table of contents",
+                enabled = homeEnabled,
+                onClick = onHome,
+                modifier = Modifier.weight(1f),
+                label = centerText,
+            )
+            VerticalDivider()
+            HeaderZone(
+                icon = Icons.Filled.ChevronRight,
+                contentDescription = "Next",
+                enabled = nextEnabled,
+                onClick = onNext,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
