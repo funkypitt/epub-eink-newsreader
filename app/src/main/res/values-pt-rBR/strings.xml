@@ -354,4 +354,13 @@
     <string name="show_navigation_labels_option_desc">Mostrar rótulos embaixo dos ícones na barra de navegação</string>
     <string name="select_all_books_content_desc">Selecionar todos os livros</string>
     <string name="credits">Pierre Gallaz · desenvolvido com Claude Code</string>
+    <string name="sync_export_credentials">Exportar credenciais</string>
+    <string name="sync_export_credentials_desc">Um arquivo para configurar outro aparelho — contém a senha</string>
+    <string name="sync_import_credentials">Importar credenciais</string>
+    <string name="sync_import_credentials_desc">Um arquivo de credenciais Reader\'s de outro aparelho ou outro app</string>
+    <string name="sync_credentials_imported">Credenciais importadas</string>
+    <string name="sync_credentials_imported_from">Drive e usuário retirados de outro app Reader\'s</string>
+    <string name="sync_credentials_not_a_file">Não é um arquivo de credenciais Reader\'s</string>
+    <string name="sync_credentials_nothing">Este arquivo não contém nada para Magazine Reader</string>
+    <string name="sync_credentials_unreadable">Não é possível ler o arquivo: %1$s</string>
 </resources>

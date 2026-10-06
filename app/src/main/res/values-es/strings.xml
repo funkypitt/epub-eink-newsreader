@@ -354,4 +354,13 @@
     <string name="show_navigation_labels_option">Mostrar etiquetas de navegación</string>
     <string name="show_navigation_labels_option_desc">Mostrar etiquetación de navegación bajo los iconos</string>
     <string name="credits">Pierre Gallaz · desarrollado con Claude Code</string>
+    <string name="sync_export_credentials">Exportar credenciales</string>
+    <string name="sync_export_credentials_desc">Un archivo para configurar otro dispositivo — contiene la contraseña</string>
+    <string name="sync_import_credentials">Importar credenciales</string>
+    <string name="sync_import_credentials_desc">Un archivo de credenciales Reader\'s de otro dispositivo u otra app</string>
+    <string name="sync_credentials_imported">Credenciales importadas</string>
+    <string name="sync_credentials_imported_from">Drive y usuario tomados de otra app Reader\'s</string>
+    <string name="sync_credentials_not_a_file">No es un archivo de credenciales Reader\'s</string>
+    <string name="sync_credentials_nothing">Este archivo no contiene nada para Magazine Reader</string>
+    <string name="sync_credentials_unreadable">No se puede leer el archivo: %1$s</string>
 </resources>

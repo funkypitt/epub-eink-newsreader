@@ -530,4 +530,13 @@
     <string name="sync_credentials_missing">Configure WebDAV URL, username and password first</string>
     <string name="based_on_upstream" translatable="false">Based on Book\'s Story by Acclorite</string>
     <string name="credits">Pierre Gallaz · developed with Claude Code</string>
+    <string name="sync_export_credentials">Export credentials</string>
+    <string name="sync_export_credentials_desc">A file to set up another device — it holds the password</string>
+    <string name="sync_import_credentials">Import credentials</string>
+    <string name="sync_import_credentials_desc">A Reader\'s credentials file from another device or app</string>
+    <string name="sync_credentials_imported">Credentials imported</string>
+    <string name="sync_credentials_imported_from">Drive and login taken from another Reader\'s app</string>
+    <string name="sync_credentials_not_a_file">Not a Reader\'s credentials file</string>
+    <string name="sync_credentials_nothing">This file holds nothing for Magazine Reader</string>
+    <string name="sync_credentials_unreadable">The file cannot be read: %1$s</string>
 </resources>

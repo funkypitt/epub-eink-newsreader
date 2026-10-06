@@ -6,6 +6,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100vh; overflow: hidden; background: #ffffff; color: #000000; }
+  html.dark, html.dark body { background: #000000; color: #ffffff; }
   /* position: fixed + inset:0 gives #viewer dimensions relative to the
      WebView's visual viewport directly. Android WebView resolves 100vh
      and 100vw to 0 in this configuration, so the four anchors are what
@@ -186,6 +187,15 @@ function loadBook(base64Data, href) {
       "body": { "line-height": "1.6 !important" },
       "img, figure, video": { "max-width": "100% !important", "height": "auto !important" }
     });
+    // White text on black for the article itself, whatever colours the magazine's own
+    // stylesheet asks for. Pictures are left as they are.
+    rendition.themes.register("dark", {
+      "html, body": { "background": "#000000 !important", "background-color": "#000000 !important", "color": "#ffffff !important" },
+      "*": { "color": "#ffffff !important", "background-color": "transparent !important", "border-color": "#666666 !important" },
+      "a": { "color": "#ffffff !important", "text-decoration": "underline !important" }
+    });
+    rendition.themes.register("light", {});
+    rendition.themes.select(darkMode ? "dark" : "light");
 
     rendition.on("relocated", function (location) {
       isNavigating = false;
@@ -373,6 +383,17 @@ function goToHref(href) {
   if (rendition) rendition.display(href);
 }
 
+// Called from Kotlin before and after loadBook: colours of the host page and of the chapter.
+var darkMode = false;
+function setDark(on) {
+  darkMode = !!on;
+  document.documentElement.className = darkMode ? "dark" : "";
+  if (rendition) {
+    rendition.themes.select(darkMode ? "dark" : "light");
+    scheduleSetup();
+  }
+}
+
 function setFontSize(px) {
   currentFontSize = Math.max(10, Math.min(40, px | 0));
   if (!bookReady) {
@@ -390,6 +411,7 @@ window.goNext = goNext;
 window.goPrev = goPrev;
 window.goToHref = goToHref;
 window.setFontSize = setFontSize;
+window.setDark = setDark;
 </script>
 </body>
 </html>

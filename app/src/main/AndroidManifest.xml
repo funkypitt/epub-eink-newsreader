@@ -85,6 +85,17 @@
             android:theme="@style/BookStory"
             android:windowSoftInputMode="adjustResize" />
 
+        <!-- The credentials file handed to the share menu. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.credentials"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/credentials_paths" />
+        </provider>
+
         <!-- Disable default WorkManager initializer (we use HiltWorkerFactory) -->
         <provider
             android:name="androidx.startup.InitializationProvider"

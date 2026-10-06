@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import ua.acclorite.book_story.BuildConfig
 import ua.acclorite.book_story.presentation.magazine.MagazineArticleState
+import ua.acclorite.book_story.ui.common.helpers.LocalSettings
 import java.io.File
 
 private const val ZOOM_MIN = 70
@@ -68,8 +69,10 @@ fun MagazineArticleContent(
     var chromeVisible by remember(state.article?.contentHref) {
         mutableStateOf(false)
     }
+    // The article page follows the app's theme: white on black when the app is dark.
+    val dark = LocalSettings.current.darkTheme.value.isDark()
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Box(modifier = Modifier.fillMaxSize().background(if (dark) Color.Black else Color.White)) {
         Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
             when {
                 state.isLoading -> CenteredText("Loading…")
@@ -79,6 +82,7 @@ fun MagazineArticleContent(
                         epubPath = state.epubPath,
                         chapterHref = state.article.contentHref,
                         textZoomPercent = textZoom,
+                        dark = dark,
                         onTapCenter = { chromeVisible = !chromeVisible },
                         onPastEnd = onNext,
                     )
@@ -135,10 +139,12 @@ private fun EpubJsArticleView(
     epubPath: String,
     chapterHref: String,
     textZoomPercent: Int,
+    dark: Boolean,
     onTapCenter: () -> Unit,
     onPastEnd: () -> Unit,
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var lastDark by remember(epubPath) { mutableStateOf<Boolean?>(null) }
     var pageLoaded by remember { mutableStateOf(false) }
     var bookLoaded by remember(epubPath) { mutableStateOf(false) }
     // Track what we've already pushed to the WebView so the AndroidView.update
@@ -185,7 +191,7 @@ private fun EpubJsArticleView(
                     overScrollMode = WebView.OVER_SCROLL_NEVER
                     isVerticalScrollBarEnabled = false
                     isHorizontalScrollBarEnabled = false
-                    setBackgroundColor(android.graphics.Color.WHITE)
+                    setBackgroundColor(if (dark) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
                     setOnTouchListener { _, _ -> true }
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
@@ -220,6 +226,12 @@ private fun EpubJsArticleView(
                 }
             },
             update = { wv ->
+                if (pageLoaded && dark != lastDark) {
+                    // before the book, so its first chapter is already drawn in the right colours
+                    wv.setBackgroundColor(if (dark) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                    wv.evaluateJavascript("setDark(${if (dark) "true" else "false"});", null)
+                    lastDark = dark
+                }
                 if (pageLoaded && !bookLoaded && epubBase64 != null) {
                     val js = "loadBook(${quoteJs(epubBase64)}, ${quoteJs(chapterHref)});"
                     wv.evaluateJavascript(js, null)
@@ -325,7 +337,7 @@ private fun CenteredText(text: String) {
         modifier = Modifier.fillMaxSize().padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = text, style = MaterialTheme.typography.bodyLarge)
+        Text(text = text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

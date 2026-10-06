@@ -352,4 +352,13 @@
     <string name="library_per_category_sort_option_note">Le tri peut être changé dans la Bibliothèque.</string>
     <string name="select_all_books_content_desc">Sélectionner tous les livres</string>
     <string name="credits">Pierre Gallaz · développé avec Claude Code</string>
+    <string name="sync_export_credentials">Exporter les identifiants</string>
+    <string name="sync_export_credentials_desc">Un fichier pour configurer un autre appareil — il contient le mot de passe</string>
+    <string name="sync_import_credentials">Importer les identifiants</string>
+    <string name="sync_import_credentials_desc">Un fichier d\'identifiants Reader\'s venu d\'un autre appareil ou d\'une autre app</string>
+    <string name="sync_credentials_imported">Identifiants importés</string>
+    <string name="sync_credentials_imported_from">Drive et identifiants repris d\'une autre app Reader\'s</string>
+    <string name="sync_credentials_not_a_file">Ce n\'est pas un fichier d\'identifiants Reader\'s</string>
+    <string name="sync_credentials_nothing">Ce fichier ne contient rien pour Magazine Reader</string>
+    <string name="sync_credentials_unreadable">Le fichier est illisible : %1$s</string>
 </resources>

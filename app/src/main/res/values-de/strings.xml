@@ -356,4 +356,13 @@
     <string name="horizontal_gesture_disable_scrolling_option">Scrollen deaktivieren</string>
     <string name="horizontal_gesture_disable_scrolling_option_desc">Scrollen im Reader vollständig deaktivieren</string>
     <string name="credits">Pierre Gallaz · entwickelt mit Claude Code</string>
+    <string name="sync_export_credentials">Zugangsdaten exportieren</string>
+    <string name="sync_export_credentials_desc">Eine Datei, um ein anderes Gerät einzurichten — sie enthält das Passwort</string>
+    <string name="sync_import_credentials">Zugangsdaten importieren</string>
+    <string name="sync_import_credentials_desc">Eine Reader\'s-Zugangsdatendatei von einem anderen Gerät oder einer anderen App</string>
+    <string name="sync_credentials_imported">Zugangsdaten importiert</string>
+    <string name="sync_credentials_imported_from">Drive und Anmeldung aus einer anderen Reader\'s-App übernommen</string>
+    <string name="sync_credentials_not_a_file">Keine Reader\'s-Zugangsdatendatei</string>
+    <string name="sync_credentials_nothing">Diese Datei enthält nichts für Magazine Reader</string>
+    <string name="sync_credentials_unreadable">Die Datei ist nicht lesbar: %1$s</string>
 </resources>

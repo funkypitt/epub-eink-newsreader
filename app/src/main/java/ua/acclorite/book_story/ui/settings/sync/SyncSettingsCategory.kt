@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import ua.acclorite.book_story.ui.common.components.common.StyledText
 import ua.acclorite.book_story.ui.settings.sync.components.SyncEnabledOption
+import ua.acclorite.book_story.ui.settings.sync.components.SyncExportCredentialsOption
+import ua.acclorite.book_story.ui.settings.sync.components.SyncImportCredentialsOption
 import ua.acclorite.book_story.ui.settings.sync.components.SyncIntervalOption
 import ua.acclorite.book_story.ui.settings.sync.components.SyncNowOption
 import ua.acclorite.book_story.ui.settings.sync.components.SyncPasswordOption
@@ -75,6 +77,18 @@ fun LazyListScope.SyncSettingsCategory(
 
     item {
         SyncPasswordOption()
+    }
+
+    item {
+        HorizontalDivider(Modifier.padding(horizontal = 18.dp, vertical = 8.dp))
+    }
+
+    item {
+        SyncExportCredentialsOption()
+    }
+
+    item {
+        SyncImportCredentialsOption()
     }
 
     item {

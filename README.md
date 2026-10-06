@@ -15,7 +15,10 @@ A fork of [Book's Story](https://github.com/Acclorite/book-story).
   article's picture. Tap a card to read; the header goes to the previous article, the
   contents, the next.
 * New issues can be fetched from a WebDAV folder (kDrive, Nextcloud…): settings → sync. Files
-  already on the phone are skipped.
+  already on the phone are skipped. The link or the account can be exported and imported as
+  the Reader's credentials file shared by the Reader's apps.
+* With the dark theme, the articles themselves are shown white on black, whatever colours the
+  magazine asks for; pictures are left as they are.
 * The library, the themes and the settings come from Book's Story; the reading screen is this
   app's own.
 * It installs beside Book's Story under its own id, `com.freedomfighter.magazinereader`
